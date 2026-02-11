@@ -1,15 +1,15 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { LeaveRequestsTable } from '@/components/LeaveRequestsTable';
-import { useAllLeaveRequests } from '@/hooks/useLeaveRequests';
+import { useDepartmentLeaveRequests } from '@/hooks/useLeaveRequests';
 import { useProfilesMap, useDepartmentsMap } from '@/hooks/useProfiles';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Users, Bell, Download, Printer } from 'lucide-react';
+import { FileText, Users, Bell, Download, Printer, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const AssistantDashboard = () => {
   const { toast } = useToast();
-  const { data: requests = [] } = useAllLeaveRequests();
+  const { data: requests = [] } = useDepartmentLeaveRequests();
   const { data: profilesMap = {} } = useProfilesMap();
   const { data: departmentsMap = {} } = useDepartmentsMap();
 
@@ -19,20 +19,68 @@ const AssistantDashboard = () => {
     pending: requests.filter(r => r.status === 'pending').length,
   };
 
+  const handleDownload = () => {
+    const headers = ['S.No', 'Faculty', 'Type', 'From', 'To', 'Days', 'Reason', 'Status'];
+    const rows = requests.map((r, i) => [
+      i + 1,
+      profilesMap[r.user_id]?.full_name || 'Unknown',
+      r.leave_type,
+      r.from_date,
+      r.to_date,
+      r.number_of_days,
+      `"${r.reason.replace(/"/g, '""')}"`,
+      r.status,
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'leave_records.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: 'Downloaded', description: 'Leave records downloaded as CSV.' });
+  };
+
+  const handleShare = async () => {
+    const text = requests.map((r, i) => {
+      const name = profilesMap[r.user_id]?.full_name || 'Unknown';
+      return `${i + 1}. ${name} - ${r.leave_type} (${r.from_date} to ${r.to_date}) - ${r.status}`;
+    }).join('\n');
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Leave Records', text });
+      } catch {
+        // User cancelled
+      }
+    } else {
+      await navigator.clipboard.writeText(text);
+      toast({ title: 'Copied!', description: 'Leave records copied to clipboard for sharing.' });
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold mb-1">Leave Records</h1>
-            <p className="text-muted-foreground text-sm">Department-wise leave records and status summaries</p>
+            <h1 className="text-2xl font-bold mb-1">Department Leave Records</h1>
+            <p className="text-muted-foreground text-sm">Your department's leave records and status summaries</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => toast({ title: 'Printing...', description: 'Preparing leave records for print.' })}>
+            <Button variant="outline" size="sm" onClick={handlePrint}>
               <Printer className="w-4 h-4 mr-1" /> Print
             </Button>
-            <Button variant="outline" size="sm" onClick={() => toast({ title: 'Downloading...', description: 'Leave records will be downloaded shortly.' })}>
+            <Button variant="outline" size="sm" onClick={handleDownload}>
               <Download className="w-4 h-4 mr-1" /> Download
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleShare}>
+              <Share2 className="w-4 h-4 mr-1" /> Share
             </Button>
           </div>
         </div>
@@ -55,7 +103,14 @@ const AssistantDashboard = () => {
           ))}
         </div>
 
-        <LeaveRequestsTable requests={requests} showFaculty profilesMap={profilesMap} departmentsMap={departmentsMap} />
+        <LeaveRequestsTable
+          requests={requests}
+          showFaculty
+          profilesMap={profilesMap}
+          departmentsMap={departmentsMap}
+          facultyClickable
+          facultyBasePath="/assistant"
+        />
       </div>
     </DashboardLayout>
   );

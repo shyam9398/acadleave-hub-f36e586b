@@ -16,6 +16,7 @@ import PrincipalRequests from "./pages/PrincipalRequests";
 import AssistantDashboard from "./pages/AssistantDashboard";
 import AssistantApplyLeave from "./pages/AssistantApplyLeave";
 import AssistantRecords from "./pages/AssistantRecords";
+import FacultyDetailView from "./pages/FacultyDetailView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/hod" element={<HODDashboard />} />
             <Route path="/hod/apply" element={<HODApplyLeave />} />
             <Route path="/hod/requests" element={<HODRequests />} />
+            <Route path="/hod/faculty/:userId" element={<FacultyDetailView />} />
             {/* Principal Routes */}
             <Route path="/principal" element={<PrincipalDashboard />} />
             <Route path="/principal/requests" element={<PrincipalRequests />} />
@@ -44,6 +46,7 @@ const App = () => (
             <Route path="/assistant" element={<AssistantDashboard />} />
             <Route path="/assistant/apply" element={<AssistantApplyLeave />} />
             <Route path="/assistant/records" element={<AssistantRecords />} />
+            <Route path="/assistant/faculty/:userId" element={<FacultyDetailView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
