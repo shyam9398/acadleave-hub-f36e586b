@@ -83,7 +83,7 @@ export const LeaveRequestsTable = ({
                   <TableCell className="text-sm">{req.from_date}</TableCell>
                   <TableCell className="text-sm">{req.to_date}</TableCell>
                   <TableCell className="text-sm font-medium">{req.number_of_days}</TableCell>
-                  <TableCell className="text-sm max-w-[200px] truncate">{req.reason}</TableCell>
+                  <TableCell className="text-sm max-w-[300px] whitespace-normal break-words">{req.reason}</TableCell>
                   <TableCell><StatusBadge status={req.status as any} /></TableCell>
                   {showActions && actionableStatuses.includes(req.status) && (
                     <TableCell>
