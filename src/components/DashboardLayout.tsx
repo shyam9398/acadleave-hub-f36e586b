@@ -51,11 +51,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const { data: notifications = [] } = useMyNotifications();
 
   if (!user) return null;
 
   const navItems = roleNavItems[user.role] || [];
-  const { data: notifications = [] } = useMyNotifications();
   const unreadCount = notifications.filter((n: any) => !n.read).length;
 
   const roleTitles: Record<string, string> = {
