@@ -94,7 +94,7 @@ export const ApplyLeaveForm = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="from">From Date</Label>
               <Input id="from" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} required />

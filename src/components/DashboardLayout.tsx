@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,11 @@ import {
   Send,
   Users,
   FileText,
+  X,
 } from 'lucide-react';
 import { NotificationPanel } from './NotificationPanel';
 import { useMyNotifications } from '@/hooks/useNotifications';
+import { useIsMobile } from '@/hooks/use-mobile';
 import collegeLogo from '@/assets/college-logo.png';
 
 interface DashboardLayoutProps {
@@ -49,9 +51,20 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { data: notifications = [] } = useMyNotifications();
+
+  // Close sidebar on route change for mobile
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [location.pathname, isMobile]);
+
+  // Update sidebar state when switching between mobile/desktop
+  useEffect(() => {
+    setSidebarOpen(!isMobile);
+  }, [isMobile]);
 
   if (!user) return null;
 
@@ -67,19 +80,36 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* Mobile overlay */}
+      {isMobile && sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 shrink-0`}
+        className={`
+          ${isMobile
+            ? `fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+            : `${sidebarOpen ? 'w-64' : 'w-20'} transition-all duration-300 shrink-0`
+          }
+          bg-sidebar text-sidebar-foreground flex flex-col
+        `}
       >
         {/* Logo */}
-         <div className="h-16 flex items-center px-4 gap-3 border-b border-sidebar-border">
-           <img src={collegeLogo} alt="College Logo" className="w-12 h-12 rounded-lg shrink-0 object-contain" />
-           {sidebarOpen && (
-             <span className="font-bold text-sm truncate">SCRCE Leave Mgmt</span>
-           )}
-         </div>
+        <div className="h-16 flex items-center px-4 gap-3 border-b border-sidebar-border">
+          <img src={collegeLogo} alt="College Logo" className="w-12 h-12 rounded-lg shrink-0 object-contain" />
+          {(sidebarOpen || isMobile) && (
+            <span className="font-bold text-sm truncate flex-1">SCRCE Leave Mgmt</span>
+          )}
+          {isMobile && (
+            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)} className="text-sidebar-foreground shrink-0">
+              <X className="w-5 h-5" />
+            </Button>
+          )}
+        </div>
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-1">
@@ -96,7 +126,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 }`}
               >
                 {item.icon}
-                {sidebarOpen && <span>{item.label}</span>}
+                {(sidebarOpen || isMobile) && <span>{item.label}</span>}
               </button>
             );
           })}
@@ -108,7 +138,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center shrink-0">
               <Users className="w-4 h-4" />
             </div>
-            {sidebarOpen && (
+            {(sidebarOpen || isMobile) && (
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">{user.name}</p>
                 <p className="text-xs text-sidebar-foreground/60 truncate">{roleTitles[user.role]}</p>
@@ -119,25 +149,25 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Top Bar */}
-        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 shrink-0">
-          <div className="flex items-center gap-3">
+        <header className="h-14 sm:h-16 bg-card border-b border-border flex items-center justify-between px-3 sm:px-6 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-muted-foreground"
+              className="text-muted-foreground shrink-0"
             >
-              {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {!isMobile && sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
-            <div>
-              <h2 className="text-lg font-semibold">{roleTitles[user.role]} Dashboard</h2>
-              <p className="text-xs text-muted-foreground">{user.department}</p>
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-semibold truncate">{roleTitles[user.role]} Dashboard</h2>
+              <p className="text-xs text-muted-foreground truncate">{user.department}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button
               variant="ghost"
               size="icon"
@@ -163,7 +193,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6 bg-background">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 bg-background">
           {children}
         </main>
       </div>
