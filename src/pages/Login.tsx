@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GraduationCap, Lock, Mail, UserCircle, Building } from 'lucide-react';
+import { Lock, Mail, UserCircle, Building } from 'lucide-react';
+import collegeLogo from '@/assets/college-logo.png';
 import { useToast } from '@/hooks/use-toast';
 
 interface Department {
@@ -93,16 +94,16 @@ const Login = () => {
           <div className="absolute bottom-32 right-16 w-48 h-48 rounded-full border-2 border-primary-foreground" />
           <div className="absolute top-1/2 left-1/3 w-32 h-32 rounded-full border-2 border-primary-foreground" />
         </div>
-        <div className="relative z-10 text-primary-foreground text-center max-w-md">
-          <div className="flex justify-center mb-8">
-            <div className="w-20 h-20 rounded-2xl bg-primary-foreground/20 flex items-center justify-center backdrop-blur-sm">
-              <GraduationCap className="w-10 h-10" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold mb-4">Faculty Leave Management</h1>
-          <p className="text-primary-foreground/80 text-lg leading-relaxed">
-            Streamlined leave application, approval, and tracking for academic institutions
-          </p>
+         <div className="relative z-10 text-primary-foreground text-center max-w-md">
+           <div className="flex justify-center mb-8">
+             <img src={collegeLogo} alt="Sir C.R. Reddy College of Engineering" className="w-24 h-24 rounded-2xl bg-white/90 p-2 object-contain" />
+           </div>
+           <h1 className="text-3xl font-bold mb-2">Sir C.R. Reddy College of Engineering</h1>
+           <p className="text-primary-foreground/70 text-sm mb-1">(Autonomous)</p>
+           <p className="text-primary-foreground/60 text-xs mb-4">Approved by AICTE | Affiliated to JNTUK | Accredited by NBA & NAAC (A Grade)</p>
+           <p className="text-primary-foreground/80 text-lg leading-relaxed">
+             Faculty Leave Management System
+           </p>
         </div>
       </div>
 
@@ -111,9 +112,7 @@ const Login = () => {
         <Card className="w-full max-w-md border-0 shadow-xl">
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-4 lg:hidden">
-              <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center">
-                <GraduationCap className="w-7 h-7 text-primary-foreground" />
-              </div>
+             <img src={collegeLogo} alt="College Logo" className="w-14 h-14 rounded-xl object-contain" />
             </div>
             <CardTitle className="text-2xl font-bold">
               {isSignUp ? 'Create Account' : 'Welcome Back'}

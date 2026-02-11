@@ -8,7 +8,6 @@ import {
   CalendarDays,
   ChevronLeft,
   ClipboardList,
-  GraduationCap,
   Home,
   LogOut,
   Menu,
@@ -18,6 +17,7 @@ import {
 } from 'lucide-react';
 import { NotificationPanel } from './NotificationPanel';
 import { useMyNotifications } from '@/hooks/useNotifications';
+import collegeLogo from '@/assets/college-logo.png';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -74,14 +74,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         } bg-sidebar text-sidebar-foreground flex flex-col transition-all duration-300 shrink-0`}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center px-4 gap-3 border-b border-sidebar-border">
-          <div className="w-10 h-10 rounded-lg bg-sidebar-accent flex items-center justify-center shrink-0">
-            <GraduationCap className="w-5 h-5" />
-          </div>
-          {sidebarOpen && (
-            <span className="font-bold text-sm truncate">Leave Management</span>
-          )}
-        </div>
+         <div className="h-16 flex items-center px-4 gap-3 border-b border-sidebar-border">
+           <img src={collegeLogo} alt="College Logo" className="w-10 h-10 rounded-lg shrink-0 object-contain" />
+           {sidebarOpen && (
+             <span className="font-bold text-sm truncate">SCRCE Leave Mgmt</span>
+           )}
+         </div>
 
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-1">
