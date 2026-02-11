@@ -10,6 +10,7 @@ interface LeaveRequestsTableProps {
   requests: LeaveRequestRow[];
   showActions?: boolean;
   showFaculty?: boolean;
+  actionableStatuses?: string[];
   profilesMap?: Record<string, { full_name: string; department_id: string | null }>;
   departmentsMap?: Record<string, string>;
   onApprove?: (id: string) => void;
@@ -23,6 +24,7 @@ const leaveTypeLabels: Record<string, string> = {
 
 export const LeaveRequestsTable = ({
   requests, showActions = false, showFaculty = false,
+  actionableStatuses = ['pending'],
   profilesMap = {}, departmentsMap = {},
   onApprove, onReject, onForward,
 }: LeaveRequestsTableProps) => {
@@ -75,7 +77,7 @@ export const LeaveRequestsTable = ({
                   <TableCell className="text-sm font-medium">{req.number_of_days}</TableCell>
                   <TableCell className="text-sm max-w-[200px] truncate">{req.reason}</TableCell>
                   <TableCell><StatusBadge status={req.status as any} /></TableCell>
-                  {showActions && req.status === 'pending' && (
+                  {showActions && actionableStatuses.includes(req.status) && (
                     <TableCell>
                       <div className="flex gap-1">
                         {onApprove && (
@@ -96,7 +98,7 @@ export const LeaveRequestsTable = ({
                       </div>
                     </TableCell>
                   )}
-                  {showActions && req.status !== 'pending' && (
+                  {showActions && !actionableStatuses.includes(req.status) && (
                     <TableCell className="text-xs text-muted-foreground">—</TableCell>
                   )}
                 </TableRow>
