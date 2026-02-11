@@ -75,7 +75,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       >
         {/* Logo */}
          <div className="h-16 flex items-center px-4 gap-3 border-b border-sidebar-border">
-           <img src={collegeLogo} alt="College Logo" className="w-10 h-10 rounded-lg shrink-0 object-contain" />
+           <img src={collegeLogo} alt="College Logo" className="w-12 h-12 rounded-lg shrink-0 object-contain" />
            {sidebarOpen && (
              <span className="font-bold text-sm truncate">SCRCE Leave Mgmt</span>
            )}

@@ -96,7 +96,7 @@ const Login = () => {
         </div>
          <div className="relative z-10 text-primary-foreground text-center max-w-md">
            <div className="flex justify-center mb-8">
-             <img src={collegeLogo} alt="Sir C.R. Reddy College of Engineering" className="w-24 h-24 rounded-2xl bg-white/90 p-2 object-contain" />
+             <img src={collegeLogo} alt="Sir C.R. Reddy College of Engineering" className="w-32 h-32 xl:w-40 xl:h-40 rounded-2xl bg-white/90 p-2 object-contain" />
            </div>
            <h1 className="text-3xl font-bold mb-2">Sir C.R. Reddy College of Engineering</h1>
            <p className="text-primary-foreground/70 text-sm mb-1">(Autonomous)</p>
@@ -112,7 +112,7 @@ const Login = () => {
         <Card className="w-full max-w-md border-0 shadow-xl">
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-4 lg:hidden">
-             <img src={collegeLogo} alt="College Logo" className="w-14 h-14 rounded-xl object-contain" />
+             <img src={collegeLogo} alt="College Logo" className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-contain" />
             </div>
             <CardTitle className="text-2xl font-bold">
               {isSignUp ? 'Create Account' : 'Welcome Back'}
