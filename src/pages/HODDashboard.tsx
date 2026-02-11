@@ -35,7 +35,7 @@ const HODDashboard = () => {
           <p className="text-muted-foreground text-sm">Review and manage leave applications</p>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: 'Total Requests', value: requests.length, icon: <ClipboardList className="w-5 h-5" />, color: 'text-primary' },
             { label: 'Pending', value: pending.length, icon: <Clock className="w-5 h-5" />, color: 'text-status-pending' },
@@ -53,8 +53,8 @@ const HODDashboard = () => {
           ))}
         </div>
 
-        <div className="flex gap-3">
-          <Input placeholder="Search by faculty name..." value={searchName} onChange={(e) => setSearchName(e.target.value)} className="max-w-xs" />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Input placeholder="Search by faculty name..." value={searchName} onChange={(e) => setSearchName(e.target.value)} className="w-full sm:max-w-xs" />
           <Select value={filterType} onValueChange={setFilterType}>
             <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
             <SelectContent>

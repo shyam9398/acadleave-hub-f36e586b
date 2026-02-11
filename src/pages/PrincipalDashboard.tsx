@@ -23,7 +23,7 @@ const PrincipalDashboard = () => {
           <p className="text-muted-foreground text-sm">Final approval for forwarded and OD leave requests</p>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             { label: 'Forwarded Requests', value: forwardedRequests.length, icon: <ClipboardList className="w-5 h-5" />, color: 'text-status-forwarded' },
             { label: 'OD Requests', value: odRequests.length, icon: <Briefcase className="w-5 h-5" />, color: 'text-status-pending' },

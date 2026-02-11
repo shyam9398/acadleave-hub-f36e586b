@@ -34,7 +34,7 @@ export const LeaveRequestsTable = ({
 }: LeaveRequestsTableProps) => {
   const navigate = useNavigate();
   return (
-    <div className="rounded-xl border border-border overflow-hidden bg-card">
+    <div className="rounded-xl border border-border overflow-x-auto bg-card">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
