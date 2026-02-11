@@ -17,6 +17,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { NotificationPanel } from './NotificationPanel';
+import { useMyNotifications } from '@/hooks/useNotifications';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -54,7 +55,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   if (!user) return null;
 
   const navItems = roleNavItems[user.role] || [];
-  const unreadCount = 0;
+  const { data: notifications = [] } = useMyNotifications();
+  const unreadCount = notifications.filter((n: any) => !n.read).length;
 
   const roleTitles: Record<string, string> = {
     faculty: 'Faculty',

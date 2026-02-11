@@ -46,6 +46,7 @@ const PrincipalDashboard = () => {
           <LeaveRequestsTable
             requests={forwardedRequests}
             showActions showFaculty profilesMap={profilesMap} departmentsMap={departmentsMap}
+            actionableStatuses={['pending', 'forwarded']}
             onApprove={(id) => updateStatus.mutate({ id, status: 'approved' })}
             onReject={(id) => updateStatus.mutate({ id, status: 'rejected' })}
           />
@@ -59,6 +60,7 @@ const PrincipalDashboard = () => {
           <LeaveRequestsTable
             requests={odRequests}
             showActions showFaculty profilesMap={profilesMap} departmentsMap={departmentsMap}
+            actionableStatuses={['pending', 'forwarded']}
             onApprove={(id) => updateStatus.mutate({ id, status: 'approved' })}
             onReject={(id) => updateStatus.mutate({ id, status: 'rejected' })}
           />

@@ -23,6 +23,8 @@ const HODRequests = () => {
           showFaculty
           profilesMap={profilesMap}
           departmentsMap={departmentsMap}
+          facultyClickable
+          facultyBasePath="/hod"
           onApprove={(id) => updateStatus.mutate({ id, status: 'approved' })}
           onReject={(id) => updateStatus.mutate({ id, status: 'rejected' })}
           onForward={(id) => updateStatus.mutate({ id, status: 'forwarded' })}

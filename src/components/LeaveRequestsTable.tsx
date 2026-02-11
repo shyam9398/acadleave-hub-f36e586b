@@ -5,6 +5,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Check, X, Forward } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface LeaveRequestsTableProps {
   requests: LeaveRequestRow[];
@@ -16,6 +17,8 @@ interface LeaveRequestsTableProps {
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
   onForward?: (id: string) => void;
+  facultyClickable?: boolean;
+  facultyBasePath?: string;
 }
 
 const leaveTypeLabels: Record<string, string> = {
@@ -27,7 +30,9 @@ export const LeaveRequestsTable = ({
   actionableStatuses = ['pending'],
   profilesMap = {}, departmentsMap = {},
   onApprove, onReject, onForward,
+  facultyClickable = false, facultyBasePath = '',
 }: LeaveRequestsTableProps) => {
+  const navigate = useNavigate();
   return (
     <div className="rounded-xl border border-border overflow-hidden bg-card">
       <Table>
@@ -61,7 +66,10 @@ export const LeaveRequestsTable = ({
                   <TableCell className="font-medium">{index + 1}</TableCell>
                   {showFaculty && (
                     <TableCell>
-                      <div>
+                      <div
+                        className={facultyClickable ? 'cursor-pointer hover:underline' : ''}
+                        onClick={() => facultyClickable && facultyBasePath && navigate(`${facultyBasePath}/faculty/${req.user_id}`)}
+                      >
                         <p className="font-medium text-sm">{facultyName}</p>
                         <p className="text-xs text-muted-foreground">{deptName}</p>
                       </div>
