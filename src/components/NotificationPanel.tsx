@@ -1,7 +1,7 @@
-import { useMyNotifications } from '@/hooks/useNotifications';
+import { useMyNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
 import { Bell, CheckCircle, AlertTriangle, Info, XCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 
 interface NotificationPanelProps {
   open: boolean;
@@ -17,6 +17,11 @@ const typeIcons: Record<string, ReactNode> = {
 
 export const NotificationPanel = ({ open, onClose }: NotificationPanelProps) => {
   const { data: notifications = [] } = useMyNotifications();
+  const { mutate: markRead } = useMarkNotificationsRead();
+
+  useEffect(() => {
+    if (open) markRead();
+  }, [open, markRead]);
 
   if (!open) return null;
 
