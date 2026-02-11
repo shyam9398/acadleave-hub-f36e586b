@@ -21,8 +21,9 @@ export const LeaveBalanceCards = ({ balances }: { balances: LeaveBalanceRow[] })
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {balances.map((b) => {
-        const available = b.available ?? (b.opening - b.used);
-        const percentage = b.opening > 0 ? ((available / b.opening) * 100) : 0;
+        const isOd = b.leave_type === 'od';
+        const available = isOd ? b.used : (b.available ?? (b.opening - b.used));
+        const percentage = b.opening > 0 ? (((b.available ?? (b.opening - b.used)) / b.opening) * 100) : 0;
         return (
           <Card key={b.id} className="border border-border">
             <CardContent className="pt-5 pb-4 px-5">
@@ -30,7 +31,7 @@ export const LeaveBalanceCards = ({ balances }: { balances: LeaveBalanceRow[] })
                 <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center text-accent-foreground">
                   {typeIcons[b.leave_type] || <CalendarDays className="w-5 h-5" />}
                 </div>
-                <span className="text-2xl font-bold">{available}</span>
+                <span className="text-2xl font-bold">{isOd ? `+${b.used}` : available}</span>
               </div>
               <h4 className="text-sm font-medium mb-2">{typeLabels[b.leave_type] || b.leave_type}</h4>
               {b.leave_type !== 'od' ? (
