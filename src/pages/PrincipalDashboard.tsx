@@ -7,8 +7,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ClipboardList, Briefcase, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PrincipalDashboard = () => {
+  const { user } = useAuth();
   const { data: allRequests = [] } = useForwardedAndOdRequests();
   const { data: profilesMap = {} } = useProfilesMap();
   const { data: departmentsMap = {} } = useDepartmentsMap();
@@ -18,8 +20,8 @@ const PrincipalDashboard = () => {
 
   const forwardedRequests = allRequests.filter(r => r.status === 'forwarded' && r.leave_type !== 'od');
   const odRequests = allRequests.filter(r => r.leave_type === 'od' && r.status === 'forwarded');
-  const approvedRequests = allRequests.filter(r => r.status === 'approved');
-  const rejectedRequests = allRequests.filter(r => r.status === 'rejected');
+  const approvedRequests = allRequests.filter(r => r.status === 'approved' && r.approved_by === user?.id);
+  const rejectedRequests = allRequests.filter(r => r.status === 'rejected' && r.approved_by === user?.id);
 
   const handleRefresh = async () => {
     setRefreshing(true);
