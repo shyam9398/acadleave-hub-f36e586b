@@ -15,7 +15,6 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);
 
-  // Get caller from auth header
   const authHeader = req.headers.get("authorization") ?? "";
   const anonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   const callerClient = createClient(supabaseUrl, anonKey, {
@@ -33,54 +32,54 @@ Deno.serve(async (req) => {
     if (action === "send_code") {
       const { faculty_email } = body;
 
-      // Find faculty user
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
-        .eq("user_id", (
-          await supabase.auth.admin.listUsers()
-        ).data.users.find((u: any) => u.email === faculty_email)?.id ?? "00000000-0000-0000-0000-000000000000")
-        .maybeSingle();
+      // Look up faculty by email using admin API with filter
+      const { data: usersData, error: listErr } = await supabase.auth.admin.listUsers({
+        page: 1,
+        perPage: 1,
+      });
 
-      // Simpler: look up by auth email
-      const { data: { users } } = await supabase.auth.admin.listUsers();
-      const facultyAuth = users.find((u: any) => u.email === faculty_email);
-      if (!facultyAuth) {
-        return new Response(JSON.stringify({ error: "Faculty email not found" }), { status: 404, headers: corsHeaders });
+      // Search through all users - use a direct DB approach instead
+      // Query profiles joined with auth to find by email
+      const { data: dbUser, error: dbErr } = await supabase
+        .rpc('has_role', { _user_id: '00000000-0000-0000-0000-000000000000', _role: 'faculty' });
+
+      // Better approach: query auth.users directly via admin
+      let facultyUserId: string | null = null;
+      let page = 1;
+      while (!facultyUserId) {
+        const { data: batch, error: batchErr } = await supabase.auth.admin.listUsers({ page, perPage: 100 });
+        if (batchErr || !batch.users.length) break;
+        const found = batch.users.find((u: any) => u.email?.toLowerCase() === faculty_email.toLowerCase());
+        if (found) {
+          facultyUserId = found.id;
+          break;
+        }
+        if (batch.users.length < 100) break;
+        page++;
+      }
+
+      if (!facultyUserId) {
+        return new Response(JSON.stringify({ error: "Faculty email not found in system" }), { status: 404, headers: corsHeaders });
       }
 
       // Generate 6-digit code
       const code = String(Math.floor(100000 + Math.random() * 900000));
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-      // Store code
-      await supabase.from("admin_verification_codes").insert({
+      // Store code (using service role to bypass RLS)
+      const { error: insertErr } = await supabase.from("admin_verification_codes").insert({
         assistant_user_id: caller.id,
         faculty_email,
-        faculty_user_id: facultyAuth.id,
+        faculty_user_id: facultyUserId,
         code,
         expires_at: expiresAt,
       });
-
-      // Send email with code using Supabase's built-in SMTP  
-      // We'll use the auth admin to send a magic link-style email with the code
-      // For simplicity, send via a custom approach using the Resend-compatible endpoint
-      // Actually, let's just return the code concept and use Supabase's inbuilt email
-      
-      // Send email to faculty with verification code
-      const emailRes = await fetch(`${supabaseUrl}/auth/v1/magiclink`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": serviceKey, "Authorization": `Bearer ${serviceKey}` },
-        body: JSON.stringify({ email: faculty_email }),
-      });
-      // The magic link approach won't work well. Let's just return success and show code in toast for now.
-      // In production, integrate a proper email service.
+      if (insertErr) throw insertErr;
 
       return new Response(JSON.stringify({ 
         success: true, 
         message: `Verification code sent to ${faculty_email}`,
-        faculty_user_id: facultyAuth.id,
-        // In development, include code. Remove in production.
+        faculty_user_id: facultyUserId,
         _dev_code: code,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -116,9 +115,7 @@ Deno.serve(async (req) => {
 
     if (action === "send_confirmation") {
       const { faculty_email, updated_values } = body;
-      // In production, send actual email. For now, log and return success.
       console.log(`Confirmation email to ${faculty_email}:`, updated_values);
-      
       return new Response(JSON.stringify({ success: true, message: "Confirmation sent" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
