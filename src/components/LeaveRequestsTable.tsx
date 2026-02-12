@@ -14,6 +14,7 @@ interface LeaveRequestsTableProps {
   actionableStatuses?: string[];
   profilesMap?: Record<string, { full_name: string; department_id: string | null }>;
   departmentsMap?: Record<string, string>;
+  rolesMap?: Record<string, string>;
   onApprove?: (id: string) => void;
   onReject?: (id: string) => void;
   onForward?: (id: string) => void;
@@ -31,7 +32,7 @@ const leaveTypeLabels: Record<string, string> = {
 export const LeaveRequestsTable = ({
   requests, showActions = false, showFaculty = false,
   actionableStatuses = ['pending'],
-  profilesMap = {}, departmentsMap = {},
+  profilesMap = {}, departmentsMap = {}, rolesMap = {},
   onApprove, onReject, onForward,
   facultyClickable = false, facultyBasePath = '',
   odForwardOnly = false,
@@ -73,9 +74,7 @@ export const LeaveRequestsTable = ({
               // Role/Branch display rules
               let subtitle = deptName;
               if (showRoleInsteadOfDept) {
-                // Show role labels instead of branch
-                // Determine role from user_roles context - for JR Assistant view
-                subtitle = 'Faculty'; // default
+                subtitle = rolesMap[req.user_id] || 'Faculty';
               } else if (showDeptForPrincipal) {
                 // Principal view: show branch/department
                 subtitle = deptName;
