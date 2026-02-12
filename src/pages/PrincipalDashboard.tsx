@@ -86,9 +86,11 @@ const PrincipalDashboard = () => {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold mb-3">Leave History</h2>
+          <h2 className="text-lg font-semibold mb-3">Leave History (Recent 5)</h2>
           <LeaveRequestsTable
-            requests={[...approvedRequests, ...rejectedRequests]}
+            requests={[...approvedRequests, ...rejectedRequests]
+              .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+              .slice(0, 5)}
             showFaculty profilesMap={profilesMap} departmentsMap={departmentsMap}
             showDeptForPrincipal
           />
