@@ -1,13 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-const roleLabels: Record<string, string> = {
-  faculty: 'Faculty',
-  hod: 'HOD',
-  junior_assistant: 'JR Assistant',
-  principal: 'Principal',
-};
-
 export const useUserRolesMap = () => {
   return useQuery({
     queryKey: ['user-roles-map'],
@@ -18,7 +11,8 @@ export const useUserRolesMap = () => {
       if (error) throw error;
       const map: Record<string, string> = {};
       for (const row of data || []) {
-        map[row.user_id] = roleLabels[row.role] || row.role;
+        // Map HOD and JR Assistant to 'Faculty' for leave requests
+        map[row.user_id] = (row.role === 'hod' || row.role === 'junior_assistant') ? 'Faculty' : 'Faculty';
       }
       return map;
     },
