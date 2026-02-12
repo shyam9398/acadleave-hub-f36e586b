@@ -24,11 +24,11 @@ export function useMarkNotificationsRead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
+      // Delete all notifications when opened (temporary notifications)
       const { error } = await supabase
         .from('notifications')
-        .update({ read: true })
-        .eq('user_id', user!.id)
-        .eq('read', false);
+        .delete()
+        .eq('user_id', user!.id);
       if (error) throw error;
     },
     onSuccess: () => {

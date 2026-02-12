@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Lock, Mail, UserCircle, Building } from 'lucide-react';
+import { Lock, Mail, UserCircle, Building, Calendar } from 'lucide-react';
 import collegeLogo from '@/assets/college-logo.png';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,6 +22,7 @@ const Login = () => {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<UserRole | ''>('');
   const [departmentId, setDepartmentId] = useState('');
+  const [yearOfJoining, setYearOfJoining] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -56,10 +57,14 @@ const Login = () => {
       toast({ title: 'Please select your department', variant: 'destructive' });
       return;
     }
+    if (isSignUp && !yearOfJoining) {
+      toast({ title: 'Please enter your year of joining', variant: 'destructive' });
+      return;
+    }
 
     setSubmitting(true);
     if (isSignUp) {
-      const { error } = await signup(email, password, fullName, role as UserRole, needsDepartment ? departmentId : undefined);
+      const { error } = await signup(email, password, fullName, role as UserRole, needsDepartment ? departmentId : undefined, yearOfJoining ? parseInt(yearOfJoining) : undefined);
       if (error) {
         toast({ title: 'Sign Up Failed', description: error, variant: 'destructive' });
       } else {
@@ -80,6 +85,8 @@ const Login = () => {
     junior_assistant: 'Junior Assistant',
     principal: 'Principal',
   };
+
+  const currentYear = new Date().getFullYear();
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center"><p>Loading...</p></div>;
@@ -174,38 +181,58 @@ const Login = () => {
               </div>
 
               {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select value={role} onValueChange={(v) => { setRole(v as UserRole); setDepartmentId(''); }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(roleLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {isSignUp && needsDepartment && (
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <div className="relative">
-                    <Select value={departmentId} onValueChange={setDepartmentId}>
-                      <SelectTrigger className="pl-10">
-                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <SelectValue placeholder="Select your department" />
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Select value={role} onValueChange={(v) => { setRole(v as UserRole); setDepartmentId(''); }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map((dept) => (
-                          <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                        {Object.entries(roleLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
+
+                  {needsDepartment && (
+                    <div className="space-y-2">
+                      <Label htmlFor="department">Department</Label>
+                      <div className="relative">
+                        <Select value={departmentId} onValueChange={setDepartmentId}>
+                          <SelectTrigger className="pl-10">
+                            <Building className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <SelectValue placeholder="Select your department" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {departments.map((dept) => (
+                              <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="yearOfJoining">Year of Joining as Faculty</Label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="yearOfJoining"
+                        type="number"
+                        placeholder="e.g. 2018"
+                        value={yearOfJoining}
+                        onChange={(e) => setYearOfJoining(e.target.value)}
+                        className="pl-10"
+                        min={1950}
+                        max={currentYear}
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={submitting}>

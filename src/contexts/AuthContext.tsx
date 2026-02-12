@@ -18,7 +18,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
-  signup: (email: string, password: string, fullName: string, role: UserRole, departmentId?: string) => Promise<{ error: string | null }>;
+  signup: (email: string, password: string, fullName: string, role: UserRole, departmentId?: string, yearOfJoining?: number) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
@@ -26,7 +26,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 async function fetchAppUser(supaUser: SupaUser): Promise<AppUser | null> {
-  // Get role
   const { data: roles } = await supabase
     .from('user_roles')
     .select('role')
@@ -35,7 +34,6 @@ async function fetchAppUser(supaUser: SupaUser): Promise<AppUser | null> {
 
   const role = (roles?.[0]?.role as UserRole) || 'faculty';
 
-  // Get profile
   const { data: profile } = await supabase
     .from('profiles')
     .select('full_name, department_id')
@@ -74,7 +72,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!mounted) return;
       setSession(session);
       if (session?.user) {
-        // Use setTimeout to avoid potential deadlocks with Supabase auth
         setTimeout(async () => {
           if (!mounted) return;
           const appUser = await fetchAppUser(session.user);
@@ -112,7 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: error?.message || null };
   };
 
-  const signup = async (email: string, password: string, fullName: string, role: UserRole, departmentId?: string) => {
+  const signup = async (email: string, password: string, fullName: string, role: UserRole, departmentId?: string, yearOfJoining?: number) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -122,6 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           full_name: fullName,
           role,
           department_id: departmentId || null,
+          year_of_joining: yearOfJoining || null,
         },
       },
     });

@@ -4,19 +4,26 @@ import { LeaveRequestsTable } from '@/components/LeaveRequestsTable';
 import { useDepartmentLeaveRequests, useUpdateLeaveStatus } from '@/hooks/useLeaveRequests';
 import { useProfilesMap, useDepartmentsMap } from '@/hooks/useProfiles';
 import { Card, CardContent } from '@/components/ui/card';
-import { ClipboardList, Clock, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ClipboardList, Clock, CheckCircle, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 
 const HODDashboard = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [searchName, setSearchName] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const { data: requests = [] } = useDepartmentLeaveRequests();
   const { data: profilesMap = {} } = useProfilesMap();
   const { data: departmentsMap = {} } = useDepartmentsMap();
   const updateStatus = useUpdateLeaveStatus();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  let filtered = requests;
+  // Filter out HOD's own requests from the action list
+  let filtered = requests.filter(r => r.user_id !== user?.id);
   if (filterType !== 'all') filtered = filtered.filter(r => r.leave_type === filterType);
   if (searchName) {
     filtered = filtered.filter(r => {
@@ -25,21 +32,32 @@ const HODDashboard = () => {
     });
   }
 
-  const pending = requests.filter(r => r.status === 'pending');
+  const pending = filtered.filter(r => r.status === 'pending');
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries();
+    setTimeout(() => setRefreshing(false), 600);
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">Department Leave Requests</h1>
-          <p className="text-muted-foreground text-sm">Review and manage leave applications</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-1">Department Leave Requests</h1>
+            <p className="text-muted-foreground text-sm">Review and manage leave applications</p>
+          </div>
+          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Total Requests', value: requests.length, icon: <ClipboardList className="w-5 h-5" />, color: 'text-primary' },
+            { label: 'Total Requests', value: filtered.length, icon: <ClipboardList className="w-5 h-5" />, color: 'text-primary' },
             { label: 'Pending', value: pending.length, icon: <Clock className="w-5 h-5" />, color: 'text-status-pending' },
-            { label: 'Processed', value: requests.length - pending.length, icon: <CheckCircle className="w-5 h-5" />, color: 'text-status-approved' },
+            { label: 'Processed', value: filtered.length - pending.length, icon: <CheckCircle className="w-5 h-5" />, color: 'text-status-approved' },
           ].map(s => (
             <Card key={s.label} className="border border-border">
               <CardContent className="pt-4 pb-3 px-4 flex items-center gap-3">
@@ -75,9 +93,20 @@ const HODDashboard = () => {
           departmentsMap={departmentsMap}
           facultyClickable
           facultyBasePath="/hod"
-          onApprove={(id) => updateStatus.mutate({ id, status: 'approved' })}
-          onReject={(id) => updateStatus.mutate({ id, status: 'rejected' })}
+          onApprove={(id) => {
+            const req = filtered.find(r => r.id === id);
+            // OD leaves: HOD can only forward, not approve
+            if (req?.leave_type === 'od') return;
+            updateStatus.mutate({ id, status: 'approved' });
+          }}
+          onReject={(id) => {
+            const req = filtered.find(r => r.id === id);
+            // OD leaves: HOD can only forward, not reject
+            if (req?.leave_type === 'od') return;
+            updateStatus.mutate({ id, status: 'rejected' });
+          }}
           onForward={(id) => updateStatus.mutate({ id, status: 'forwarded' })}
+          odForwardOnly
         />
       </div>
     </DashboardLayout>

@@ -19,10 +19,11 @@ interface LeaveRequestsTableProps {
   onForward?: (id: string) => void;
   facultyClickable?: boolean;
   facultyBasePath?: string;
+  odForwardOnly?: boolean;
 }
 
 const leaveTypeLabels: Record<string, string> = {
-  casual: 'Casual', earned: 'Earned', medical: 'Medical', od: 'On-Duty',
+  casual: 'Casual', earned: 'Earned', medical: 'Medical', od: 'On-Duty', special: 'Special',
 };
 
 export const LeaveRequestsTable = ({
@@ -31,6 +32,7 @@ export const LeaveRequestsTable = ({
   profilesMap = {}, departmentsMap = {},
   onApprove, onReject, onForward,
   facultyClickable = false, facultyBasePath = '',
+  odForwardOnly = false,
 }: LeaveRequestsTableProps) => {
   const navigate = useNavigate();
   return (
@@ -61,6 +63,9 @@ export const LeaveRequestsTable = ({
               const profile = profilesMap[req.user_id];
               const facultyName = profile?.full_name || 'Unknown';
               const deptName = req.department_id ? (departmentsMap[req.department_id] || '') : '';
+              const isOd = req.leave_type === 'od';
+              const isActionable = actionableStatuses.includes(req.status);
+
               return (
                 <TableRow key={req.id}>
                   <TableCell className="font-medium">{index + 1}</TableCell>
@@ -85,28 +90,39 @@ export const LeaveRequestsTable = ({
                   <TableCell className="text-sm font-medium">{req.number_of_days}</TableCell>
                   <TableCell className="text-sm max-w-[300px] whitespace-normal break-words">{req.reason}</TableCell>
                   <TableCell><StatusBadge status={req.status as any} /></TableCell>
-                  {showActions && actionableStatuses.includes(req.status) && (
+                  {showActions && isActionable && (
                     <TableCell>
                       <div className="flex gap-1">
-                        {onApprove && (
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-status-approved hover:bg-accent" onClick={() => onApprove(req.id)}>
-                            <Check className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {onReject && (
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-status-rejected hover:bg-accent" onClick={() => onReject(req.id)}>
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {onForward && (
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-status-forwarded hover:bg-accent" onClick={() => onForward(req.id)}>
-                            <Forward className="w-4 h-4" />
-                          </Button>
+                        {/* For OD leaves with odForwardOnly, only show Forward button */}
+                        {isOd && odForwardOnly ? (
+                          onForward && (
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-status-forwarded hover:bg-accent" onClick={() => onForward(req.id)}>
+                              <Forward className="w-4 h-4" />
+                            </Button>
+                          )
+                        ) : (
+                          <>
+                            {onApprove && (
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-status-approved hover:bg-accent" onClick={() => onApprove(req.id)}>
+                                <Check className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {onReject && (
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-status-rejected hover:bg-accent" onClick={() => onReject(req.id)}>
+                                <X className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {onForward && (
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-status-forwarded hover:bg-accent" onClick={() => onForward(req.id)}>
+                                <Forward className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </TableCell>
                   )}
-                  {showActions && !actionableStatuses.includes(req.status) && (
+                  {showActions && !isActionable && (
                     <TableCell className="text-xs text-muted-foreground">—</TableCell>
                   )}
                 </TableRow>

@@ -1,14 +1,19 @@
 import DashboardLayout from '@/components/DashboardLayout';
-import { LeaveBalanceCards } from '@/components/LeaveBalanceCards';
+import { LeaveBalanceTable } from '@/components/LeaveBalanceTable';
 import { LeaveRequestsTable } from '@/components/LeaveRequestsTable';
 import { useMyLeaveRequests } from '@/hooks/useLeaveRequests';
 import { useMyLeaveBalances } from '@/hooks/useLeaveBalances';
 import { Card, CardContent } from '@/components/ui/card';
-import { CalendarDays, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CalendarDays, CheckCircle, Clock, XCircle, RefreshCw } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
 const FacultyDashboard = () => {
   const { data: requests = [] } = useMyLeaveRequests();
   const { data: balances = [] } = useMyLeaveBalances();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
 
   const stats = {
     total: requests.length,
@@ -17,12 +22,25 @@ const FacultyDashboard = () => {
     rejected: requests.filter(r => r.status === 'rejected').length,
   };
 
+  const recentRequests = requests.slice(0, 4);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries();
+    setTimeout(() => setRefreshing(false), 600);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">Leave Overview</h1>
-          <p className="text-muted-foreground text-sm">Track your leave balance and history</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-1">Leave Overview</h1>
+            <p className="text-muted-foreground text-sm">Track your leave balance and history</p>
+          </div>
+          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -46,12 +64,12 @@ const FacultyDashboard = () => {
 
         <div>
           <h2 className="text-lg font-semibold mb-3">Leave Balance</h2>
-          <LeaveBalanceCards balances={balances} />
+          <LeaveBalanceTable balances={balances} />
         </div>
 
         <div>
           <h2 className="text-lg font-semibold mb-3">Recent Leave History</h2>
-          <LeaveRequestsTable requests={requests} />
+          <LeaveRequestsTable requests={recentRequests} />
         </div>
       </div>
     </DashboardLayout>
