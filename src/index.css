@@ -55,6 +55,11 @@
     --status-forwarded: 220 70% 50%;
     --status-forwarded-foreground: 0 0% 100%;
 
+    /* Leave balance colors */
+    --leave-used: 34 89% 47%;
+    --leave-remaining: 0 72% 51%;
+    --leave-available: 142 71% 45%;
+
     /* Chart */
     --chart-1: 220 70% 25%;
     --chart-2: 142 71% 45%;
