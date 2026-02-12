@@ -6,6 +6,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Check, X, Forward } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LeaveRequestsTableProps {
   requests: LeaveRequestRow[];
@@ -40,6 +41,114 @@ export const LeaveRequestsTable = ({
   showDeptForPrincipal = false,
 }: LeaveRequestsTableProps) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+
+  if (requests.length === 0) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+        No leave requests found
+      </div>
+    );
+  }
+
+  // Mobile card layout
+  if (isMobile) {
+    return (
+      <div className="space-y-3">
+        {requests.map((req, index) => {
+          const profile = profilesMap[req.user_id];
+          const facultyName = profile?.full_name || 'Unknown';
+          const deptName = req.department_id ? (departmentsMap[req.department_id] || '') : '';
+          const isOd = req.leave_type === 'od';
+          const isActionable = actionableStatuses.includes(req.status);
+
+          let subtitle = deptName;
+          if (showRoleInsteadOfDept) {
+            subtitle = rolesMap[req.user_id] || 'Faculty';
+          } else if (showDeptForPrincipal) {
+            subtitle = deptName;
+          }
+
+          return (
+            <div key={req.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  {showFaculty && (
+                    <div
+                      className={facultyClickable ? 'cursor-pointer hover:underline' : ''}
+                      onClick={() => facultyClickable && facultyBasePath && navigate(`${facultyBasePath}/faculty/${req.user_id}`)}
+                    >
+                      <p className="font-semibold text-sm truncate">{facultyName}</p>
+                      <p className="text-xs text-muted-foreground">{subtitle}</p>
+                    </div>
+                  )}
+                </div>
+                <StatusBadge status={req.status as any} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground">Type</p>
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground">
+                    {leaveTypeLabels[req.leave_type] || req.leave_type}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Days</p>
+                  <p className="font-medium">{req.number_of_days}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">From</p>
+                  <p>{req.from_date}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">To</p>
+                  <p>{req.to_date}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground">Reason</p>
+                <p className="text-sm break-words">{req.reason}</p>
+              </div>
+
+              {showActions && isActionable && (
+                <div className="flex gap-2 pt-1 border-t border-border">
+                  {isOd && odForwardOnly ? (
+                    onForward && (
+                      <Button size="sm" variant="outline" className="text-status-forwarded" onClick={() => onForward(req.id)}>
+                        <Forward className="w-4 h-4 mr-1" /> Forward
+                      </Button>
+                    )
+                  ) : (
+                    <>
+                      {onApprove && (
+                        <Button size="sm" variant="outline" className="text-status-approved" onClick={() => onApprove(req.id)}>
+                          <Check className="w-4 h-4 mr-1" /> Approve
+                        </Button>
+                      )}
+                      {onReject && (
+                        <Button size="sm" variant="outline" className="text-status-rejected" onClick={() => onReject(req.id)}>
+                          <X className="w-4 h-4 mr-1" /> Reject
+                        </Button>
+                      )}
+                      {onForward && (
+                        <Button size="sm" variant="outline" className="text-status-forwarded" onClick={() => onForward(req.id)}>
+                          <Forward className="w-4 h-4 mr-1" /> Forward
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Desktop/tablet table layout
   return (
     <div className="rounded-xl border border-border overflow-x-auto bg-card">
       <Table>
@@ -57,91 +166,81 @@ export const LeaveRequestsTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {requests.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={showActions ? 9 : 8} className="text-center py-8 text-muted-foreground">
-                No leave requests found
-              </TableCell>
-            </TableRow>
-          ) : (
-            requests.map((req, index) => {
-              const profile = profilesMap[req.user_id];
-              const facultyName = profile?.full_name || 'Unknown';
-              const deptName = req.department_id ? (departmentsMap[req.department_id] || '') : '';
-              const isOd = req.leave_type === 'od';
-              const isActionable = actionableStatuses.includes(req.status);
+          {requests.map((req, index) => {
+            const profile = profilesMap[req.user_id];
+            const facultyName = profile?.full_name || 'Unknown';
+            const deptName = req.department_id ? (departmentsMap[req.department_id] || '') : '';
+            const isOd = req.leave_type === 'od';
+            const isActionable = actionableStatuses.includes(req.status);
 
-              // Role/Branch display rules
-              let subtitle = deptName;
-              if (showRoleInsteadOfDept) {
-                subtitle = rolesMap[req.user_id] || 'Faculty';
-              } else if (showDeptForPrincipal) {
-                // Principal view: show branch/department
-                subtitle = deptName;
-              }
+            let subtitle = deptName;
+            if (showRoleInsteadOfDept) {
+              subtitle = rolesMap[req.user_id] || 'Faculty';
+            } else if (showDeptForPrincipal) {
+              subtitle = deptName;
+            }
 
-              return (
-                <TableRow key={req.id}>
-                  <TableCell className="font-medium">{index + 1}</TableCell>
-                  {showFaculty && (
-                    <TableCell>
-                      <div
-                        className={facultyClickable ? 'cursor-pointer hover:underline' : ''}
-                        onClick={() => facultyClickable && facultyBasePath && navigate(`${facultyBasePath}/faculty/${req.user_id}`)}
-                      >
-                        <p className="font-medium text-sm">{facultyName}</p>
-                        <p className="text-xs text-muted-foreground">{subtitle}</p>
-                      </div>
-                    </TableCell>
-                  )}
+            return (
+              <TableRow key={req.id}>
+                <TableCell className="font-medium">{index + 1}</TableCell>
+                {showFaculty && (
                   <TableCell>
-                    <span className="text-xs font-medium px-2 py-1 rounded-md bg-secondary text-secondary-foreground">
-                      {leaveTypeLabels[req.leave_type] || req.leave_type}
-                    </span>
+                    <div
+                      className={facultyClickable ? 'cursor-pointer hover:underline' : ''}
+                      onClick={() => facultyClickable && facultyBasePath && navigate(`${facultyBasePath}/faculty/${req.user_id}`)}
+                    >
+                      <p className="font-medium text-sm">{facultyName}</p>
+                      <p className="text-xs text-muted-foreground">{subtitle}</p>
+                    </div>
                   </TableCell>
-                  <TableCell className="text-sm">{req.from_date}</TableCell>
-                  <TableCell className="text-sm">{req.to_date}</TableCell>
-                  <TableCell className="text-sm font-medium">{req.number_of_days}</TableCell>
-                  <TableCell className="text-sm max-w-[300px] whitespace-normal break-words">{req.reason}</TableCell>
-                  <TableCell><StatusBadge status={req.status as any} /></TableCell>
-                  {showActions && isActionable && (
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {isOd && odForwardOnly ? (
-                          onForward && (
+                )}
+                <TableCell>
+                  <span className="text-xs font-medium px-2 py-1 rounded-md bg-secondary text-secondary-foreground">
+                    {leaveTypeLabels[req.leave_type] || req.leave_type}
+                  </span>
+                </TableCell>
+                <TableCell className="text-sm">{req.from_date}</TableCell>
+                <TableCell className="text-sm">{req.to_date}</TableCell>
+                <TableCell className="text-sm font-medium">{req.number_of_days}</TableCell>
+                <TableCell className="text-sm max-w-[300px] whitespace-normal break-words">{req.reason}</TableCell>
+                <TableCell><StatusBadge status={req.status as any} /></TableCell>
+                {showActions && isActionable && (
+                  <TableCell>
+                    <div className="flex gap-1">
+                      {isOd && odForwardOnly ? (
+                        onForward && (
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-status-forwarded hover:bg-accent" onClick={() => onForward(req.id)}>
+                            <Forward className="w-4 h-4" />
+                          </Button>
+                        )
+                      ) : (
+                        <>
+                          {onApprove && (
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-status-approved hover:bg-accent" onClick={() => onApprove(req.id)}>
+                              <Check className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {onReject && (
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-status-rejected hover:bg-accent" onClick={() => onReject(req.id)}>
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {onForward && (
                             <Button size="icon" variant="ghost" className="h-8 w-8 text-status-forwarded hover:bg-accent" onClick={() => onForward(req.id)}>
                               <Forward className="w-4 h-4" />
                             </Button>
-                          )
-                        ) : (
-                          <>
-                            {onApprove && (
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-status-approved hover:bg-accent" onClick={() => onApprove(req.id)}>
-                                <Check className="w-4 h-4" />
-                              </Button>
-                            )}
-                            {onReject && (
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-status-rejected hover:bg-accent" onClick={() => onReject(req.id)}>
-                                <X className="w-4 h-4" />
-                              </Button>
-                            )}
-                            {onForward && (
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-status-forwarded hover:bg-accent" onClick={() => onForward(req.id)}>
-                                <Forward className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
-                  {showActions && !isActionable && (
-                    <TableCell className="text-xs text-muted-foreground">—</TableCell>
-                  )}
-                </TableRow>
-              );
-            })
-          )}
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                )}
+                {showActions && !isActionable && (
+                  <TableCell className="text-xs text-muted-foreground">—</TableCell>
+                )}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
