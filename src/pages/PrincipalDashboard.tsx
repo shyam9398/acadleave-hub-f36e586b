@@ -86,7 +86,7 @@ const PrincipalDashboard = () => {
         <div>
           <h2 className="text-lg font-semibold mb-3">Leave History</h2>
           <LeaveRequestsTable
-            requests={approvedRequests}
+            requests={[...approvedRequests, ...rejectedRequests]}
             showFaculty profilesMap={profilesMap} departmentsMap={departmentsMap}
             showDeptForPrincipal
           />

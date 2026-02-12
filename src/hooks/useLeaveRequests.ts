@@ -78,11 +78,11 @@ export function useForwardedAndOdRequests() {
     queryKey: ['forwarded-od-requests'],
     enabled: !!user,
     queryFn: async () => {
-      // Principal sees forwarded requests and OD requests that have been forwarded
+      // Principal sees forwarded, approved, and rejected requests
       const { data, error } = await supabase
         .from('leave_requests')
         .select('*')
-        .or('status.eq.forwarded')
+        .in('status', ['forwarded', 'approved', 'rejected'])
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as LeaveRequestRow[];
