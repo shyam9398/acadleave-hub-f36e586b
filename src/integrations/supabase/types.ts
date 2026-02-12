@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_verification_codes: {
+        Row: {
+          assistant_user_id: string
+          code: string
+          created_at: string
+          expires_at: string
+          faculty_email: string
+          faculty_user_id: string | null
+          id: string
+          verified: boolean
+        }
+        Insert: {
+          assistant_user_id: string
+          code: string
+          created_at?: string
+          expires_at: string
+          faculty_email: string
+          faculty_user_id?: string | null
+          id?: string
+          verified?: boolean
+        }
+        Update: {
+          assistant_user_id?: string
+          code?: string
+          created_at?: string
+          expires_at?: string
+          faculty_email?: string
+          faculty_user_id?: string | null
+          id?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           created_at: string
