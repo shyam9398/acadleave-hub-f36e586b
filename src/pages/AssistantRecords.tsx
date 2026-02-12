@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Download, Printer, Share2 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 const AssistantRecords = () => {
@@ -16,6 +16,7 @@ const AssistantRecords = () => {
   const { toast } = useToast();
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const printRef = useRef<HTMLDivElement>(null);
 
   const filteredRequests = useMemo(() => {
     if (!fromDate && !toDate) return requests;
@@ -26,27 +27,33 @@ const AssistantRecords = () => {
     });
   }, [requests, fromDate, toDate]);
 
-  const handleDownload = () => {
-    const headers = ['S.No', 'Faculty', 'Type', 'From', 'To', 'Days', 'Reason', 'Status'];
-    const rows = filteredRequests.map((r, i) => [
-      i + 1,
-      profilesMap[r.user_id]?.full_name || 'Unknown',
-      r.leave_type,
-      r.from_date,
-      r.to_date,
-      r.number_of_days,
-      `"${r.reason.replace(/"/g, '""')}"`,
-      r.status,
-    ]);
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `leave_records${fromDate ? `_from_${fromDate}` : ''}${toDate ? `_to_${toDate}` : ''}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast({ title: 'Downloaded', description: 'Leave records downloaded as CSV.' });
+  const handleDownloadPDF = () => {
+    // Use browser print-to-PDF with only the table content
+    const printContent = printRef.current;
+    if (!printContent) return;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Leave Records</title>
+      <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+        th { background: #f5f5f5; font-weight: bold; }
+      </style></head><body>
+      <h2>Department Leave Records${fromDate ? ` from ${fromDate}` : ''}${toDate ? ` to ${toDate}` : ''}</h2>
+      <table><thead><tr>
+        <th>S.No</th><th>Faculty</th><th>Role</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th>
+      </tr></thead><tbody>
+      ${filteredRequests.map((r, i) => {
+        const name = profilesMap[r.user_id]?.full_name || 'Unknown';
+        return `<tr><td>${i+1}</td><td>${name}</td><td>Faculty</td><td>${r.leave_type}</td><td>${r.from_date}</td><td>${r.to_date}</td><td>${r.number_of_days}</td><td>${r.reason}</td><td>${r.status}</td></tr>`;
+      }).join('')}
+      </tbody></table></body></html>
+    `);
+    win.document.close();
+    win.print();
+    toast({ title: 'PDF', description: 'Print dialog opened for PDF download.' });
   };
 
   const handleShare = async () => {
@@ -63,7 +70,26 @@ const AssistantRecords = () => {
     }
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const printContent = printRef.current;
+    if (!printContent) { window.print(); return; }
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(`
+      <html><head><title>Leave History</title>
+      <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+        th { background: #f5f5f5; font-weight: bold; }
+      </style></head><body>
+      <h2>Leave History</h2>
+      ${printContent.querySelector('table')?.outerHTML || ''}
+      </body></html>
+    `);
+    win.document.close();
+    win.print();
+  };
 
   return (
     <DashboardLayout>
@@ -77,8 +103,8 @@ const AssistantRecords = () => {
             <Button variant="outline" size="sm" onClick={handlePrint}>
               <Printer className="w-4 h-4 mr-1" /> Print
             </Button>
-            <Button variant="outline" size="sm" onClick={handleDownload}>
-              <Download className="w-4 h-4 mr-1" /> Download
+            <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+              <Download className="w-4 h-4 mr-1" /> PDF
             </Button>
             <Button variant="outline" size="sm" onClick={handleShare}>
               <Share2 className="w-4 h-4 mr-1" /> Share
@@ -102,14 +128,17 @@ const AssistantRecords = () => {
           )}
         </div>
 
-        <LeaveRequestsTable
-          requests={filteredRequests}
-          showFaculty
-          profilesMap={profilesMap}
-          departmentsMap={departmentsMap}
-          facultyClickable
-          facultyBasePath="/assistant"
-        />
+        <div ref={printRef}>
+          <LeaveRequestsTable
+            requests={filteredRequests}
+            showFaculty
+            profilesMap={profilesMap}
+            departmentsMap={departmentsMap}
+            facultyClickable
+            facultyBasePath="/assistant"
+            showRoleInsteadOfDept
+          />
+        </div>
       </div>
     </DashboardLayout>
   );

@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Search } from 'lucide-react';
+import { Settings, Search, Save } from 'lucide-react';
 
 interface FacultyBalance {
   id: string;
@@ -32,10 +32,11 @@ const leaveTypeLabels: Record<string, string> = {
 const AssistantAdmin = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedFaculty, setSelectedFaculty] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [editedValues, setEditedValues] = useState<Record<string, number>>({});
 
-  // Get faculty in the same department
   const { data: facultyProfiles = [] } = useQuery({
     queryKey: ['dept-faculty-profiles', user?.departmentId],
     enabled: !!user?.departmentId,
@@ -49,7 +50,6 @@ const AssistantAdmin = () => {
     },
   });
 
-  // Get leave balances for selected faculty
   const { data: balances = [], refetch: refetchBalances } = useQuery({
     queryKey: ['faculty-balances', selectedFaculty],
     enabled: !!selectedFaculty,
@@ -63,18 +63,36 @@ const AssistantAdmin = () => {
     },
   });
 
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const updates = Object.entries(editedValues);
+      for (const [balanceId, newOpening] of updates) {
+        const { error } = await supabase
+          .from('leave_balances')
+          .update({ opening: newOpening })
+          .eq('id', balanceId);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast({ title: 'Saved', description: 'Leave quotas updated successfully.' });
+      setEditedValues({});
+      queryClient.invalidateQueries({ queryKey: ['faculty-balances', selectedFaculty] });
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    },
+  });
+
   const filteredFaculty = facultyProfiles.filter(f =>
     f.full_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleUpdateBalance = async (balanceId: string, newOpening: number) => {
-    // JR Assistant cannot update via RLS directly - show toast explaining
-    toast({
-      title: 'Contact Admin',
-      description: 'Leave quota updates require administrator access. Please contact the system administrator.',
-      variant: 'destructive',
-    });
+  const handleValueChange = (balanceId: string, value: number) => {
+    setEditedValues(prev => ({ ...prev, [balanceId]: value }));
   };
+
+  const hasChanges = Object.keys(editedValues).length > 0;
 
   return (
     <DashboardLayout>
@@ -96,7 +114,7 @@ const AssistantAdmin = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <Select value={selectedFaculty} onValueChange={setSelectedFaculty}>
+            <Select value={selectedFaculty} onValueChange={(v) => { setSelectedFaculty(v); setEditedValues({}); }}>
               <SelectTrigger>
                 <SelectValue placeholder="Choose a faculty member" />
               </SelectTrigger>
@@ -112,8 +130,15 @@ const AssistantAdmin = () => {
         {selectedFaculty && balances.length > 0 && (
           <Card className="border border-border">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Settings className="w-4 h-4" /> Leave Balances
+              <CardTitle className="flex items-center justify-between text-base">
+                <span className="flex items-center gap-2">
+                  <Settings className="w-4 h-4" /> Leave Balances
+                </span>
+                {hasChanges && (
+                  <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+                    <Save className="w-4 h-4 mr-1" /> Save Changes
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -123,7 +148,7 @@ const AssistantAdmin = () => {
                     <div>
                       <p className="font-medium text-sm">{leaveTypeLabels[b.leave_type] || b.leave_type}</p>
                       <p className="text-xs text-muted-foreground">
-                        Total: {b.opening} | Used: {b.used} | Available: {b.available ?? (b.opening - b.used)}
+                        Total: {editedValues[b.id] ?? b.opening} | Used: {b.used} | Available: {(editedValues[b.id] ?? b.opening) - b.used}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -131,12 +156,9 @@ const AssistantAdmin = () => {
                       <Input
                         type="number"
                         className="w-20 h-8 text-sm"
-                        defaultValue={b.opening}
+                        value={editedValues[b.id] ?? b.opening}
                         min={0}
-                        onBlur={(e) => {
-                          const val = Number(e.target.value);
-                          if (val !== b.opening) handleUpdateBalance(b.id, val);
-                        }}
+                        onChange={(e) => handleValueChange(b.id, Number(e.target.value))}
                       />
                     </div>
                   </div>

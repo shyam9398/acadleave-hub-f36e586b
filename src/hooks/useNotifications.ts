@@ -24,11 +24,30 @@ export function useMarkNotificationsRead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      // Delete all notifications when opened (temporary notifications)
+      // Mark all as read immediately (removes red indicator)
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', user!.id)
+        .eq('read', false);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-notifications', user?.id] });
+    },
+  });
+}
+
+export function useDeleteReadNotifications() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
       const { error } = await supabase
         .from('notifications')
         .delete()
-        .eq('user_id', user!.id);
+        .eq('user_id', user!.id)
+        .eq('read', true);
       if (error) throw error;
     },
     onSuccess: () => {

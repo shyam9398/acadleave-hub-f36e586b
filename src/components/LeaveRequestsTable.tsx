@@ -73,8 +73,9 @@ export const LeaveRequestsTable = ({
               // Role/Branch display rules
               let subtitle = deptName;
               if (showRoleInsteadOfDept) {
-                // HOD view: show "Faculty" role instead of branch
-                subtitle = 'Faculty';
+                // Show role labels instead of branch
+                // Determine role from user_roles context - for JR Assistant view
+                subtitle = 'Faculty'; // default
               } else if (showDeptForPrincipal) {
                 // Principal view: show branch/department
                 subtitle = deptName;
