@@ -26,6 +26,7 @@ const leaveTypeLabels: Record<string, string> = {
   medical: 'Medical Leave',
   od: 'OD Leave',
   special: 'Special Leave',
+  lop: 'LOP Leave',
 };
 
 type Step = 'email' | 'verify' | 'edit';
@@ -211,7 +212,7 @@ const AssistantAdmin = () => {
         )}
 
         {/* Step 3: Edit Leave Balances */}
-        {step === 'edit' && balances.length > 0 && (
+        {step === 'edit' && (
           <Card className="border border-border">
             <CardHeader>
               <CardTitle className="flex items-center justify-between text-base">
@@ -221,37 +222,58 @@ const AssistantAdmin = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {balances.map(b => (
-                  <div key={b.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                    <div>
-                      <p className="font-medium text-sm">{leaveTypeLabels[b.leave_type] || b.leave_type}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Total: {editedValues[b.id] ?? b.opening} | Used: {b.used} | Available: {(editedValues[b.id] ?? b.opening) - b.used}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Total:</Label>
-                      <Input
-                        type="number"
-                        className="w-20 h-8 text-sm"
-                        value={editedValues[b.id] ?? b.opening}
-                        min={0}
-                        onChange={(e) => handleValueChange(b.id, Number(e.target.value))}
-                      />
-                    </div>
+              {balances.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No leave balances found for this faculty.</p>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {balances.map(b => {
+                      const currentOpening = editedValues[b.id] ?? b.opening;
+                      const available = currentOpening - b.used;
+                      return (
+                        <div key={b.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{leaveTypeLabels[b.leave_type] || b.leave_type}</p>
+                            <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                              <span>Total: <strong className="text-foreground">{currentOpening}</strong></span>
+                              <span className="text-orange-600">Used: {b.used}</span>
+                              <span className={available < 0 ? 'text-red-600 font-semibold' : 'text-green-600'}>
+                                Available: {available < 0 ? `LOP (${available})` : available}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs">Total:</Label>
+                            <Input
+                              type="number"
+                              className="w-20 h-8 text-sm"
+                              value={currentOpening}
+                              min={0}
+                              onChange={(e) => handleValueChange(b.id, Number(e.target.value))}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
-              {hasChanges && (
-                <div className="flex gap-3 mt-4">
-                  <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="flex-1">
-                    <Save className="w-4 h-4 mr-1" /> Save
-                  </Button>
-                  <Button variant="secondary" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="flex-1">
-                    <RefreshCw className="w-4 h-4 mr-1" /> Update
-                  </Button>
-                </div>
+                  <div className="flex gap-3 mt-4">
+                    <Button 
+                      onClick={() => saveMutation.mutate()} 
+                      disabled={!hasChanges || saveMutation.isPending} 
+                      className="flex-1"
+                    >
+                      <Save className="w-4 h-4 mr-1" /> Save
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      onClick={() => { refetchBalances(); setEditedValues({}); }} 
+                      disabled={saveMutation.isPending} 
+                      className="flex-1"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+                    </Button>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
