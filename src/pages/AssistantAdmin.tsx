@@ -4,12 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Search, Save } from 'lucide-react';
+import { Settings, Save, RefreshCw, ShieldCheck, Mail } from 'lucide-react';
 
 interface FacultyBalance {
   id: string;
@@ -29,37 +28,70 @@ const leaveTypeLabels: Record<string, string> = {
   special: 'Special Leave',
 };
 
+type Step = 'email' | 'verify' | 'edit';
+
 const AssistantAdmin = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedFaculty, setSelectedFaculty] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState('');
+
+  const [step, setStep] = useState<Step>('email');
+  const [facultyEmail, setFacultyEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verifiedFacultyId, setVerifiedFacultyId] = useState<string | null>(null);
   const [editedValues, setEditedValues] = useState<Record<string, number>>({});
 
-  const { data: facultyProfiles = [] } = useQuery({
-    queryKey: ['dept-faculty-profiles', user?.departmentId],
-    enabled: !!user?.departmentId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .eq('department_id', user!.departmentId!);
-      if (error) throw error;
-      return data;
-    },
-  });
-
   const { data: balances = [], refetch: refetchBalances } = useQuery({
-    queryKey: ['faculty-balances', selectedFaculty],
-    enabled: !!selectedFaculty,
+    queryKey: ['faculty-balances', verifiedFacultyId],
+    enabled: !!verifiedFacultyId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('leave_balances')
         .select('*')
-        .eq('user_id', selectedFaculty);
+        .eq('user_id', verifiedFacultyId!);
       if (error) throw error;
       return data as FacultyBalance[];
+    },
+  });
+
+  const sendCodeMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('admin-verify', {
+        body: { action: 'send_code', faculty_email: facultyEmail },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ title: 'Code Sent', description: `Verification code sent to ${facultyEmail}. Check console for dev code.` });
+      // In dev mode, show code
+      if (data?._dev_code) {
+        toast({ title: 'Dev Code', description: `Code: ${data._dev_code}`, variant: 'default' });
+      }
+      setStep('verify');
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  const verifyCodeMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('admin-verify', {
+        body: { action: 'verify_code', faculty_email: facultyEmail, code: verificationCode },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      setVerifiedFacultyId(data.faculty_user_id);
+      setStep('edit');
+      toast({ title: 'Verified', description: 'Faculty verified successfully.' });
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Verification Failed', description: err.message, variant: 'destructive' });
     },
   });
 
@@ -73,20 +105,20 @@ const AssistantAdmin = () => {
           .eq('id', balanceId);
         if (error) throw error;
       }
+      // Send confirmation email
+      await supabase.functions.invoke('admin-verify', {
+        body: { action: 'send_confirmation', faculty_email: facultyEmail, updated_values: editedValues },
+      });
     },
     onSuccess: () => {
-      toast({ title: 'Saved', description: 'Leave quotas updated successfully.' });
+      toast({ title: 'Saved', description: 'Leave quotas updated. Confirmation sent to faculty.' });
       setEditedValues({});
-      queryClient.invalidateQueries({ queryKey: ['faculty-balances', selectedFaculty] });
+      queryClient.invalidateQueries({ queryKey: ['faculty-balances', verifiedFacultyId] });
     },
     onError: (err: Error) => {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     },
   });
-
-  const filteredFaculty = facultyProfiles.filter(f =>
-    f.full_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleValueChange = (balanceId: string, value: number) => {
     setEditedValues(prev => ({ ...prev, [balanceId]: value }));
@@ -94,51 +126,98 @@ const AssistantAdmin = () => {
 
   const hasChanges = Object.keys(editedValues).length > 0;
 
+  const resetFlow = () => {
+    setStep('email');
+    setFacultyEmail('');
+    setVerificationCode('');
+    setVerifiedFacultyId(null);
+    setEditedValues({});
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">Admin - Leave Quota Management</h1>
-          <p className="text-muted-foreground text-sm">View and manage faculty leave quotas</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-1">Admin - Leave Quota Management</h1>
+            <p className="text-muted-foreground text-sm">Verify faculty and manage leave quotas</p>
+          </div>
+          {step !== 'email' && (
+            <Button variant="outline" size="sm" onClick={resetFlow}>
+              <RefreshCw className="w-4 h-4 mr-1" /> Start Over
+            </Button>
+          )}
         </div>
 
-        <Card className="border border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Search className="w-4 h-4" /> Select Faculty
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Input
-              placeholder="Search faculty..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Select value={selectedFaculty} onValueChange={(v) => { setSelectedFaculty(v); setEditedValues({}); }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a faculty member" />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredFaculty.map(f => (
-                  <SelectItem key={f.user_id} value={f.user_id}>{f.full_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+        {/* Step 1: Faculty Email */}
+        {step === 'email' && (
+          <Card className="border border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Mail className="w-4 h-4" /> Step 1: Enter Faculty Email
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Faculty Email ID</Label>
+                <Input
+                  type="email"
+                  placeholder="faculty@college.edu"
+                  value={facultyEmail}
+                  onChange={(e) => setFacultyEmail(e.target.value)}
+                />
+              </div>
+              <Button
+                onClick={() => sendCodeMutation.mutate()}
+                disabled={!facultyEmail || sendCodeMutation.isPending}
+                className="w-full"
+              >
+                {sendCodeMutation.isPending ? 'Sending...' : 'Send Verification Code'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
-        {selectedFaculty && balances.length > 0 && (
+        {/* Step 2: Verify Code */}
+        {step === 'verify' && (
+          <Card className="border border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShieldCheck className="w-4 h-4" /> Step 2: Enter Verification Code
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                A verification code has been sent to <strong>{facultyEmail}</strong>
+              </p>
+              <div className="space-y-2">
+                <Label>Verification Code</Label>
+                <Input
+                  placeholder="Enter 6-digit code"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  maxLength={6}
+                />
+              </div>
+              <Button
+                onClick={() => verifyCodeMutation.mutate()}
+                disabled={verificationCode.length !== 6 || verifyCodeMutation.isPending}
+                className="w-full"
+              >
+                {verifyCodeMutation.isPending ? 'Verifying...' : 'Verify Code'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 3: Edit Leave Balances */}
+        {step === 'edit' && balances.length > 0 && (
           <Card className="border border-border">
             <CardHeader>
               <CardTitle className="flex items-center justify-between text-base">
                 <span className="flex items-center gap-2">
-                  <Settings className="w-4 h-4" /> Leave Balances
+                  <Settings className="w-4 h-4" /> Leave Balances — {facultyEmail}
                 </span>
-                {hasChanges && (
-                  <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-                    <Save className="w-4 h-4 mr-1" /> Save Changes
-                  </Button>
-                )}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -164,6 +243,16 @@ const AssistantAdmin = () => {
                   </div>
                 ))}
               </div>
+              {hasChanges && (
+                <div className="flex gap-3 mt-4">
+                  <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="flex-1">
+                    <Save className="w-4 h-4 mr-1" /> Save
+                  </Button>
+                  <Button variant="secondary" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="flex-1">
+                    <RefreshCw className="w-4 h-4 mr-1" /> Update
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
