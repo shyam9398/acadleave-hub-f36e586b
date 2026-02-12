@@ -2,6 +2,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { LeaveRequestsTable } from '@/components/LeaveRequestsTable';
 import { useDepartmentLeaveRequests } from '@/hooks/useLeaveRequests';
 import { useProfilesMap, useDepartmentsMap } from '@/hooks/useProfiles';
+import { useUserRolesMap } from '@/hooks/useUserRolesMap';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,7 @@ const AssistantRecords = () => {
   const { data: requests = [] } = useDepartmentLeaveRequests();
   const { data: profilesMap = {} } = useProfilesMap();
   const { data: departmentsMap = {} } = useDepartmentsMap();
+  const { data: rolesMap = {} } = useUserRolesMap();
   const { toast } = useToast();
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -45,9 +47,10 @@ const AssistantRecords = () => {
       <table><thead><tr>
         <th>S.No</th><th>Faculty</th><th>Role</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th>
       </tr></thead><tbody>
-      ${filteredRequests.map((r, i) => {
-        const name = profilesMap[r.user_id]?.full_name || 'Unknown';
-        return `<tr><td>${i+1}</td><td>${name}</td><td>Faculty</td><td>${r.leave_type}</td><td>${r.from_date}</td><td>${r.to_date}</td><td>${r.number_of_days}</td><td>${r.reason}</td><td>${r.status}</td></tr>`;
+       ${filteredRequests.map((r, i) => {
+         const name = profilesMap[r.user_id]?.full_name || 'Unknown';
+         const role = rolesMap[r.user_id] || 'Faculty';
+         return `<tr><td>${i+1}</td><td>${name}</td><td>${role}</td><td>${r.leave_type}</td><td>${r.from_date}</td><td>${r.to_date}</td><td>${r.number_of_days}</td><td>${r.reason}</td><td>${r.status}</td></tr>`;
       }).join('')}
       </tbody></table></body></html>
     `);
@@ -137,6 +140,7 @@ const AssistantRecords = () => {
             facultyClickable
             facultyBasePath="/assistant"
             showRoleInsteadOfDept
+            rolesMap={rolesMap}
           />
         </div>
       </div>

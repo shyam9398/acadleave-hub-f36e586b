@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { LeaveRequestsTable } from '@/components/LeaveRequestsTable';
 import { useDepartmentLeaveRequests, useUpdateLeaveStatus } from '@/hooks/useLeaveRequests';
 import { useProfilesMap, useDepartmentsMap } from '@/hooks/useProfiles';
+import { useUserRolesMap } from '@/hooks/useUserRolesMap';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ClipboardList, Clock, CheckCircle, RefreshCw } from 'lucide-react';
@@ -21,6 +22,7 @@ const HODDashboard = () => {
   const { data: balances = [] } = useMyLeaveBalances();
   const { data: profilesMap = {} } = useProfilesMap();
   const { data: departmentsMap = {} } = useDepartmentsMap();
+  const { data: rolesMap = {} } = useUserRolesMap();
   const updateStatus = useUpdateLeaveStatus();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -101,6 +103,7 @@ const HODDashboard = () => {
           facultyClickable
           facultyBasePath="/hod"
           showRoleInsteadOfDept
+          rolesMap={rolesMap}
           onApprove={(id) => {
             const req = filtered.find(r => r.id === id);
             if (req?.leave_type === 'od') return;
