@@ -2,13 +2,17 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { LeaveRequestsTable } from '@/components/LeaveRequestsTable';
 import { useDepartmentLeaveRequests, useUpdateLeaveStatus } from '@/hooks/useLeaveRequests';
 import { useProfilesMap, useDepartmentsMap } from '@/hooks/useProfiles';
+import { useAuth } from '@/contexts/AuthContext';
 
 const HODRequests = () => {
   const { data: requests = [] } = useDepartmentLeaveRequests();
   const { data: profilesMap = {} } = useProfilesMap();
   const { data: departmentsMap = {} } = useDepartmentsMap();
   const updateStatus = useUpdateLeaveStatus();
-  const pendingRequests = requests.filter(r => r.status === 'pending');
+  const { user } = useAuth();
+
+  // Filter out HOD's own requests and show only pending
+  const pendingRequests = requests.filter(r => r.status === 'pending' && r.user_id !== user?.id);
 
   return (
     <DashboardLayout>
@@ -25,9 +29,18 @@ const HODRequests = () => {
           departmentsMap={departmentsMap}
           facultyClickable
           facultyBasePath="/hod"
-          onApprove={(id) => updateStatus.mutate({ id, status: 'approved' })}
-          onReject={(id) => updateStatus.mutate({ id, status: 'rejected' })}
+          onApprove={(id) => {
+            const req = pendingRequests.find(r => r.id === id);
+            if (req?.leave_type === 'od') return;
+            updateStatus.mutate({ id, status: 'approved' });
+          }}
+          onReject={(id) => {
+            const req = pendingRequests.find(r => r.id === id);
+            if (req?.leave_type === 'od') return;
+            updateStatus.mutate({ id, status: 'rejected' });
+          }}
           onForward={(id) => updateStatus.mutate({ id, status: 'forwarded' })}
+          odForwardOnly
         />
       </div>
     </DashboardLayout>

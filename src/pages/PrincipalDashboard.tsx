@@ -1,26 +1,42 @@
+import { useState } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { LeaveRequestsTable } from '@/components/LeaveRequestsTable';
 import { useForwardedAndOdRequests, useUpdateLeaveStatus } from '@/hooks/useLeaveRequests';
 import { useProfilesMap, useDepartmentsMap } from '@/hooks/useProfiles';
 import { Card, CardContent } from '@/components/ui/card';
-import { ClipboardList, Briefcase, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ClipboardList, Briefcase, CheckCircle, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useQueryClient } from '@tanstack/react-query';
 
 const PrincipalDashboard = () => {
   const { data: allRequests = [] } = useForwardedAndOdRequests();
   const { data: profilesMap = {} } = useProfilesMap();
   const { data: departmentsMap = {} } = useDepartmentsMap();
   const updateStatus = useUpdateLeaveStatus();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const forwardedRequests = allRequests.filter(r => r.status === 'forwarded');
-  const odRequests = allRequests.filter(r => r.leave_type === 'od');
+  const forwardedRequests = allRequests.filter(r => r.status === 'forwarded' && r.leave_type !== 'od');
+  const odRequests = allRequests.filter(r => r.leave_type === 'od' && r.status === 'forwarded');
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries();
+    setTimeout(() => setRefreshing(false), 600);
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">Principal Dashboard</h1>
-          <p className="text-muted-foreground text-sm">Final approval for forwarded and OD leave requests</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-1">Principal Dashboard</h1>
+            <p className="text-muted-foreground text-sm">Final approval for forwarded and OD leave requests</p>
+          </div>
+          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -46,7 +62,7 @@ const PrincipalDashboard = () => {
           <LeaveRequestsTable
             requests={forwardedRequests}
             showActions showFaculty profilesMap={profilesMap} departmentsMap={departmentsMap}
-            actionableStatuses={['pending', 'forwarded']}
+            actionableStatuses={['forwarded']}
             onApprove={(id) => updateStatus.mutate({ id, status: 'approved' })}
             onReject={(id) => updateStatus.mutate({ id, status: 'rejected' })}
           />
@@ -60,7 +76,7 @@ const PrincipalDashboard = () => {
           <LeaveRequestsTable
             requests={odRequests}
             showActions showFaculty profilesMap={profilesMap} departmentsMap={departmentsMap}
-            actionableStatuses={['pending', 'forwarded']}
+            actionableStatuses={['forwarded']}
             onApprove={(id) => updateStatus.mutate({ id, status: 'approved' })}
             onReject={(id) => updateStatus.mutate({ id, status: 'rejected' })}
           />

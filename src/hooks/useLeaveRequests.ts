@@ -18,7 +18,6 @@ export interface LeaveRequestRow {
   department_id: string | null;
   created_at: string;
   updated_at: string;
-  // joined
   faculty_name?: string;
   department_name?: string;
 }
@@ -79,10 +78,11 @@ export function useForwardedAndOdRequests() {
     queryKey: ['forwarded-od-requests'],
     enabled: !!user,
     queryFn: async () => {
+      // Principal sees forwarded requests and OD requests that have been forwarded
       const { data, error } = await supabase
         .from('leave_requests')
         .select('*')
-        .or('status.eq.forwarded,leave_type.eq.od')
+        .or('status.eq.forwarded')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as LeaveRequestRow[];
@@ -105,6 +105,10 @@ export function useSubmitLeaveRequest() {
       is_half_day: boolean;
       assigned_faculty: string;
     }) => {
+      // If HOD applies leave, set status to 'forwarded' so it goes directly to Principal
+      const isHod = user!.role === 'hod' as string;
+      const status = isHod ? 'forwarded' : 'pending';
+
       const { error } = await supabase.from('leave_requests').insert({
         user_id: user!.id,
         department_id: user!.departmentId,
@@ -115,6 +119,7 @@ export function useSubmitLeaveRequest() {
         reason: params.reason,
         is_half_day: params.is_half_day,
         assigned_faculty: params.assigned_faculty || null,
+        status,
       });
       if (error) throw error;
     },

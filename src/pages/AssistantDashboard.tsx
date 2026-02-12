@@ -4,12 +4,22 @@ import { useDepartmentLeaveRequests } from '@/hooks/useLeaveRequests';
 import { useProfilesMap, useDepartmentsMap } from '@/hooks/useProfiles';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Users, Bell, Download, Printer, Share2 } from 'lucide-react';
+import { FileText, Users, Bell, Download, Printer, Share2, RefreshCw } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 const AssistantDashboard = () => {
   const { toast } = useToast();
   const { data: requests = [] } = useDepartmentLeaveRequests();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries();
+    setTimeout(() => setRefreshing(false), 600);
+  };
   const { data: profilesMap = {} } = useProfilesMap();
   const { data: departmentsMap = {} } = useDepartmentsMap();
 
@@ -73,6 +83,9 @@ const AssistantDashboard = () => {
             <p className="text-muted-foreground text-sm">Your department's leave records and status summaries</p>
           </div>
           <div className="flex gap-2 shrink-0">
+            <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing}>
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
             <Button variant="outline" size="sm" onClick={handlePrint}>
               <Printer className="w-4 h-4 mr-1" /> Print
             </Button>

@@ -8,14 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Send } from 'lucide-react';
 import { useSubmitLeaveRequest } from '@/hooks/useLeaveRequests';
+import { useAuth } from '@/contexts/AuthContext';
 
-type LeaveType = 'casual' | 'earned' | 'medical' | 'od';
+type LeaveType = 'casual' | 'earned' | 'medical' | 'od' | 'special';
 
 const leaveTypeOptions: { value: LeaveType; label: string }[] = [
   { value: 'casual', label: 'Casual Leave' },
   { value: 'earned', label: 'Earned Leave' },
   { value: 'medical', label: 'Medical Leave' },
   { value: 'od', label: 'On-Duty (OD)' },
+  { value: 'special', label: 'Special Leave' },
 ];
 
 export const ApplyLeaveForm = () => {
@@ -26,6 +28,7 @@ export const ApplyLeaveForm = () => {
   const [assignedFaculty, setAssignedFaculty] = useState('');
   const [isHalfDay, setIsHalfDay] = useState(false);
   const submitMutation = useSubmitLeaveRequest();
+  const { user } = useAuth();
 
   const numberOfDays = useMemo(() => {
     if (!fromDate || !toDate) return 0;
@@ -60,6 +63,9 @@ export const ApplyLeaveForm = () => {
     });
   };
 
+  // HOD info note
+  const isHod = user?.role === 'hod';
+
   return (
     <Card className="max-w-2xl border border-border">
       <CardHeader>
@@ -67,6 +73,11 @@ export const ApplyLeaveForm = () => {
           <Send className="w-5 h-5" />
           Apply for Leave
         </CardTitle>
+        {isHod && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Your leave request will be sent directly to the Principal for approval.
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-5">
