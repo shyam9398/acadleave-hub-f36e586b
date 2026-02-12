@@ -64,6 +64,8 @@ export const ApplyLeaveForm = () => {
   };
 
   const isHod = user?.role === 'hod';
+  const isAssistant = user?.role === 'junior_assistant';
+  const hideAssignedFaculty = isHod || isAssistant;
 
   return (
     <Card className="max-w-2xl border border-border">
@@ -94,8 +96,7 @@ export const ApplyLeaveForm = () => {
             </Select>
           </div>
 
-          {/* Hide assigned faculty for HOD - not required */}
-          {!isHod && (
+          {!hideAssignedFaculty && (
             <div className="space-y-2">
               <Label htmlFor="assignedFaculty">Assigned Faculty</Label>
               <Input
