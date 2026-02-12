@@ -1,7 +1,7 @@
 import { useMyNotifications, useMarkNotificationsRead } from '@/hooks/useNotifications';
 import { Bell, CheckCircle, AlertTriangle, Info, XCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 
 interface NotificationPanelProps {
   open: boolean;
@@ -18,10 +18,19 @@ const typeIcons: Record<string, ReactNode> = {
 export const NotificationPanel = ({ open, onClose }: NotificationPanelProps) => {
   const { data: notifications = [] } = useMyNotifications();
   const { mutate: markRead } = useMarkNotificationsRead();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (open) markRead();
-  }, [open, markRead]);
+    if (open && notifications.length > 0) {
+      // Auto-remove notifications after 5 minutes of viewing
+      timerRef.current = setTimeout(() => {
+        markRead();
+      }, 5 * 60 * 1000); // 5 minutes
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [open, notifications.length, markRead]);
 
   if (!open) return null;
 
