@@ -5,9 +5,9 @@ import {
 
 const typeLabels: Record<string, string> = {
   casual: 'Casual Leave',
-  earned: 'EL',
-  medical: 'ML',
-  od: 'On Duty',
+  earned: 'Earned Leave',
+  medical: 'Medical Leave',
+  od: 'OD Leave',
   special: 'Special Leave',
 };
 
@@ -19,49 +19,44 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
   );
 
   return (
-    <div className="rounded-xl border border-border overflow-x-auto bg-card">
+    <div className="rounded-lg border border-border overflow-x-auto bg-card">
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/60">
-            <TableHead className="font-semibold text-center w-16">Sl.No</TableHead>
-            <TableHead className="font-semibold">Leave Type</TableHead>
-            <TableHead className="font-semibold text-center" colSpan={3}>
-              Leaves History
-            </TableHead>
-          </TableRow>
-          <TableRow className="bg-muted/30">
-            <TableHead />
-            <TableHead />
-            <TableHead className="font-semibold text-center">Opening</TableHead>
-            <TableHead className="font-semibold text-center">Used</TableHead>
-            <TableHead className="font-semibold text-center">Available</TableHead>
+          <TableRow className="bg-muted/50 border-b-2 border-border">
+            <TableHead className="font-semibold text-center w-12 text-xs">Sl.No</TableHead>
+            <TableHead className="font-semibold text-xs">Leave Type</TableHead>
+            <TableHead className="font-semibold text-center text-xs text-muted-foreground">Total</TableHead>
+            <TableHead className="font-semibold text-center text-xs">Used</TableHead>
+            <TableHead className="font-semibold text-center text-xs">Remaining</TableHead>
+            <TableHead className="font-semibold text-center text-xs">Available</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sorted.map((b, idx) => {
             const isOd = b.leave_type === 'od';
-            const available = isOd ? b.used : (b.available ?? (b.opening - b.used));
-            const opening = isOd ? '—' : b.opening.toFixed(2);
-            const used = b.used.toFixed(2);
-            const avail = isOd ? b.used.toFixed(2) : (available < 0 ? `${available.toFixed(2)} (LOP)` : available.toFixed(2));
+            const remaining = isOd ? 0 : (b.opening - b.used);
+            const available = isOd ? b.used : (b.available ?? remaining);
+            const total = isOd ? '—' : b.opening;
+            const usedVal = isOd ? `+${b.used}` : b.used;
+            const remainingVal = isOd ? '—' : (remaining < 0 ? `${remaining} (LOP)` : remaining);
+            const availableVal = isOd ? `+${b.used}` : (available < 0 ? 0 : available);
 
             return (
-              <TableRow key={b.id}>
-                <TableCell className="text-center text-sm text-muted-foreground">{idx + 1}</TableCell>
-                <TableCell className="font-medium text-sm">
-                  {typeLabels[b.leave_type] || b.leave_type}
+              <TableRow key={b.id} className="border-b border-border/50">
+                <TableCell className="text-center text-xs text-muted-foreground py-3">{idx + 1}</TableCell>
+                <TableCell className="font-medium text-sm py-3">{typeLabels[b.leave_type]}</TableCell>
+                <TableCell className="text-center font-semibold text-sm py-3 text-muted-foreground">{total}</TableCell>
+                <TableCell className="text-center font-semibold text-sm py-3 text-[hsl(var(--leave-used))]">{usedVal}</TableCell>
+                <TableCell className={`text-center font-semibold text-sm py-3 ${remaining < 0 && !isOd ? 'text-[hsl(var(--leave-remaining))]' : 'text-[hsl(var(--leave-remaining))]'}`}>
+                  {remainingVal}
                 </TableCell>
-                <TableCell className="text-center font-semibold text-sm">{opening}</TableCell>
-                <TableCell className="text-center font-semibold text-sm">{isOd ? used : (parseFloat(used) > 0 ? used : '.00')}</TableCell>
-                <TableCell className={`text-center font-semibold text-sm ${available < 0 ? 'text-destructive' : ''}`}>
-                  {avail}
-                </TableCell>
+                <TableCell className="text-center font-semibold text-sm py-3 text-[hsl(var(--leave-available))]">{availableVal}</TableCell>
               </TableRow>
             );
           })}
           {sorted.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground text-sm">
                 No leave balance data
               </TableCell>
             </TableRow>
