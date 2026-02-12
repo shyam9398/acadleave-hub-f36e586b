@@ -32,41 +32,23 @@ Deno.serve(async (req) => {
     if (action === "send_code") {
       const { faculty_email } = body;
 
-      // Look up faculty by email using admin API with filter
-      const { data: usersData, error: listErr } = await supabase.auth.admin.listUsers({
-        page: 1,
-        perPage: 1,
-      });
+      // Use DB function to look up user by email directly
+      const { data: facultyUserId, error: lookupErr } = await supabase
+        .rpc('get_user_id_by_email', { _email: faculty_email });
 
-      // Search through all users - use a direct DB approach instead
-      // Query profiles joined with auth to find by email
-      const { data: dbUser, error: dbErr } = await supabase
-        .rpc('has_role', { _user_id: '00000000-0000-0000-0000-000000000000', _role: 'faculty' });
+      console.log('Lookup result:', facultyUserId, 'Error:', lookupErr);
 
-      // Better approach: query auth.users directly via admin
-      let facultyUserId: string | null = null;
-      let page = 1;
-      while (!facultyUserId) {
-        const { data: batch, error: batchErr } = await supabase.auth.admin.listUsers({ page, perPage: 100 });
-        if (batchErr || !batch.users.length) break;
-        const found = batch.users.find((u: any) => u.email?.toLowerCase() === faculty_email.toLowerCase());
-        if (found) {
-          facultyUserId = found.id;
-          break;
-        }
-        if (batch.users.length < 100) break;
-        page++;
-      }
-
-      if (!facultyUserId) {
-        return new Response(JSON.stringify({ error: "Faculty email not found in system" }), { status: 404, headers: corsHeaders });
+      if (lookupErr || !facultyUserId) {
+        return new Response(JSON.stringify({ error: "Faculty email not found in system" }), { 
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        });
       }
 
       // Generate 6-digit code
       const code = String(Math.floor(100000 + Math.random() * 900000));
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-      // Store code (using service role to bypass RLS)
+      // Store code using service role (bypasses RLS)
       const { error: insertErr } = await supabase.from("admin_verification_codes").insert({
         assistant_user_id: caller.id,
         faculty_email,
@@ -74,11 +56,14 @@ Deno.serve(async (req) => {
         code,
         expires_at: expiresAt,
       });
-      if (insertErr) throw insertErr;
+      if (insertErr) {
+        console.error('Insert error:', insertErr);
+        throw insertErr;
+      }
 
       return new Response(JSON.stringify({ 
         success: true, 
-        message: `Verification code sent to ${faculty_email}`,
+        message: `Verification code generated for ${faculty_email}`,
         faculty_user_id: facultyUserId,
         _dev_code: code,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -100,7 +85,9 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (!record) {
-        return new Response(JSON.stringify({ error: "Invalid or expired code" }), { status: 400, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Invalid or expired code" }), { 
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        });
       }
 
       await supabase
@@ -121,9 +108,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: "Unknown action" }), { 
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
   } catch (err) {
     console.error(err);
-    return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: (err as Error).message }), { 
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } 
+    });
   }
 });
