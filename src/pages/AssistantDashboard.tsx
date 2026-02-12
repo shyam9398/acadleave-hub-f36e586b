@@ -4,14 +4,15 @@ import { useDepartmentLeaveRequests } from '@/hooks/useLeaveRequests';
 import { useProfilesMap, useDepartmentsMap } from '@/hooks/useProfiles';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Users, Bell, Download, Printer, Share2, RefreshCw } from 'lucide-react';
+import { FileText, Users, Bell, RefreshCw } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { LeaveBalanceTable } from '@/components/LeaveBalanceTable';
+import { useMyLeaveBalances } from '@/hooks/useLeaveBalances';
 
 const AssistantDashboard = () => {
-  const { toast } = useToast();
   const { data: requests = [] } = useDepartmentLeaveRequests();
+  const { data: balances = [] } = useMyLeaveBalances();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -29,50 +30,9 @@ const AssistantDashboard = () => {
     pending: requests.filter(r => r.status === 'pending').length,
   };
 
-  const handleDownload = () => {
-    const headers = ['S.No', 'Faculty', 'Type', 'From', 'To', 'Days', 'Reason', 'Status'];
-    const rows = requests.map((r, i) => [
-      i + 1,
-      profilesMap[r.user_id]?.full_name || 'Unknown',
-      r.leave_type,
-      r.from_date,
-      r.to_date,
-      r.number_of_days,
-      `"${r.reason.replace(/"/g, '""')}"`,
-      r.status,
-    ]);
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'leave_records.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-    toast({ title: 'Downloaded', description: 'Leave records downloaded as CSV.' });
-  };
-
-  const handleShare = async () => {
-    const text = requests.map((r, i) => {
-      const name = profilesMap[r.user_id]?.full_name || 'Unknown';
-      return `${i + 1}. ${name} - ${r.leave_type} (${r.from_date} to ${r.to_date}) - ${r.status}`;
-    }).join('\n');
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Leave Records', text });
-      } catch {
-        // User cancelled
-      }
-    } else {
-      await navigator.clipboard.writeText(text);
-      toast({ title: 'Copied!', description: 'Leave records copied to clipboard for sharing.' });
-    }
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
+  // Show only today's recent leave history
+  const today = new Date().toISOString().split('T')[0];
+  const todayRequests = requests.filter(r => r.created_at.startsWith(today));
 
   return (
     <DashboardLayout>
@@ -82,20 +42,9 @@ const AssistantDashboard = () => {
             <h1 className="text-xl sm:text-2xl font-bold mb-1">Department Leave Records</h1>
             <p className="text-muted-foreground text-sm">Your department's leave records and status summaries</p>
           </div>
-          <div className="flex gap-2 shrink-0">
-            <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing}>
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="w-4 h-4 mr-1" /> Print
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleDownload}>
-              <Download className="w-4 h-4 mr-1" /> Download
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleShare}>
-              <Share2 className="w-4 h-4 mr-1" /> Share
-            </Button>
-          </div>
+          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -116,14 +65,22 @@ const AssistantDashboard = () => {
           ))}
         </div>
 
-        <LeaveRequestsTable
-          requests={requests}
-          showFaculty
-          profilesMap={profilesMap}
-          departmentsMap={departmentsMap}
-          facultyClickable
-          facultyBasePath="/assistant"
-        />
+        <div>
+          <h2 className="text-lg font-semibold mb-3">Leave Balance</h2>
+          <LeaveBalanceTable balances={balances} />
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold mb-3">Today's Leave History</h2>
+          <LeaveRequestsTable
+            requests={todayRequests}
+            showFaculty
+            profilesMap={profilesMap}
+            departmentsMap={departmentsMap}
+            facultyClickable
+            facultyBasePath="/assistant"
+          />
+        </div>
       </div>
     </DashboardLayout>
   );

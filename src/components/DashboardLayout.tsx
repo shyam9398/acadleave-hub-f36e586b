@@ -15,6 +15,8 @@ import {
   Users,
   FileText,
   X,
+  CheckSquare,
+  Settings,
 } from 'lucide-react';
 import { NotificationPanel } from './NotificationPanel';
 import { useMyNotifications } from '@/hooks/useNotifications';
@@ -35,6 +37,7 @@ const roleNavItems: Record<string, { label: string; icon: ReactNode; path: strin
     { label: 'Dashboard', icon: <Home className="w-5 h-5" />, path: '/hod' },
     { label: 'Pending Requests', icon: <ClipboardList className="w-5 h-5" />, path: '/hod/requests' },
     { label: 'Apply Leave', icon: <Send className="w-5 h-5" />, path: '/hod/apply' },
+    { label: 'Leave Status', icon: <CheckSquare className="w-5 h-5" />, path: '/hod/status' },
   ],
   principal: [
     { label: 'Dashboard', icon: <Home className="w-5 h-5" />, path: '/principal' },
@@ -44,6 +47,8 @@ const roleNavItems: Record<string, { label: string; icon: ReactNode; path: strin
     { label: 'Dashboard', icon: <Home className="w-5 h-5" />, path: '/assistant' },
     { label: 'Leave Records', icon: <FileText className="w-5 h-5" />, path: '/assistant/records' },
     { label: 'Apply Leave', icon: <Send className="w-5 h-5" />, path: '/assistant/apply' },
+    { label: 'Leave Status', icon: <CheckSquare className="w-5 h-5" />, path: '/assistant/status' },
+    { label: 'Admin', icon: <Settings className="w-5 h-5" />, path: '/assistant/admin' },
   ],
 };
 
@@ -56,12 +61,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { data: notifications = [] } = useMyNotifications();
 
-  // Close sidebar on route change for mobile
   useEffect(() => {
     if (isMobile) setSidebarOpen(false);
   }, [location.pathname, isMobile]);
 
-  // Update sidebar state when switching between mobile/desktop
   useEffect(() => {
     setSidebarOpen(!isMobile);
   }, [isMobile]);
@@ -80,15 +83,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Mobile overlay */}
       {isMobile && sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
           ${isMobile
@@ -98,7 +96,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           bg-sidebar text-sidebar-foreground flex flex-col
         `}
       >
-        {/* Logo */}
         <div className="h-16 flex items-center px-4 gap-3 border-b border-sidebar-border">
           <img src={collegeLogo} alt="College Logo" className="w-12 h-12 rounded-lg shrink-0 object-contain" />
           {(sidebarOpen || isMobile) && (
@@ -111,7 +108,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           )}
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
@@ -132,7 +128,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           })}
         </nav>
 
-        {/* User Info */}
         <div className="p-3 border-t border-sidebar-border">
           <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-9 h-9 rounded-full bg-sidebar-accent flex items-center justify-center shrink-0">
@@ -148,17 +143,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-        {/* Top Bar */}
         <header className="h-14 sm:h-16 bg-card border-b border-border flex items-center justify-between px-3 sm:px-6 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-muted-foreground shrink-0"
-            >
+            <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="text-muted-foreground shrink-0">
               {!isMobile && sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
             <div className="min-w-0">
@@ -168,12 +156,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
-              onClick={() => setNotificationsOpen(!notificationsOpen)}
-            >
+            <Button variant="ghost" size="icon" className="relative" onClick={() => setNotificationsOpen(!notificationsOpen)}>
               <Bell className="w-5 h-5 text-muted-foreground" />
               {unreadCount > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] bg-destructive text-destructive-foreground border-2 border-card">
@@ -181,28 +164,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 </Badge>
               )}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={async () => { await logout(); navigate('/'); }}
-              className="text-muted-foreground"
-            >
+            <Button variant="ghost" size="icon" onClick={async () => { await logout(); navigate('/'); }} className="text-muted-foreground">
               <LogOut className="w-5 h-5" />
             </Button>
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 overflow-y-auto p-3 sm:p-6 bg-background">
           {children}
         </main>
       </div>
 
-      {/* Notifications */}
-      <NotificationPanel
-        open={notificationsOpen}
-        onClose={() => setNotificationsOpen(false)}
-      />
+      <NotificationPanel open={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
     </div>
   );
 };

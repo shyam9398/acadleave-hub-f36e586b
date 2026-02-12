@@ -20,6 +20,8 @@ interface LeaveRequestsTableProps {
   facultyClickable?: boolean;
   facultyBasePath?: string;
   odForwardOnly?: boolean;
+  showRoleInsteadOfDept?: boolean;
+  showDeptForPrincipal?: boolean;
 }
 
 const leaveTypeLabels: Record<string, string> = {
@@ -33,6 +35,8 @@ export const LeaveRequestsTable = ({
   onApprove, onReject, onForward,
   facultyClickable = false, facultyBasePath = '',
   odForwardOnly = false,
+  showRoleInsteadOfDept = false,
+  showDeptForPrincipal = false,
 }: LeaveRequestsTableProps) => {
   const navigate = useNavigate();
   return (
@@ -66,6 +70,16 @@ export const LeaveRequestsTable = ({
               const isOd = req.leave_type === 'od';
               const isActionable = actionableStatuses.includes(req.status);
 
+              // Role/Branch display rules
+              let subtitle = deptName;
+              if (showRoleInsteadOfDept) {
+                // HOD view: show "Faculty" role instead of branch
+                subtitle = 'Faculty';
+              } else if (showDeptForPrincipal) {
+                // Principal view: show branch/department
+                subtitle = deptName;
+              }
+
               return (
                 <TableRow key={req.id}>
                   <TableCell className="font-medium">{index + 1}</TableCell>
@@ -76,7 +90,7 @@ export const LeaveRequestsTable = ({
                         onClick={() => facultyClickable && facultyBasePath && navigate(`${facultyBasePath}/faculty/${req.user_id}`)}
                       >
                         <p className="font-medium text-sm">{facultyName}</p>
-                        <p className="text-xs text-muted-foreground">{deptName}</p>
+                        <p className="text-xs text-muted-foreground">{subtitle}</p>
                       </div>
                     </TableCell>
                   )}
@@ -93,7 +107,6 @@ export const LeaveRequestsTable = ({
                   {showActions && isActionable && (
                     <TableCell>
                       <div className="flex gap-1">
-                        {/* For OD leaves with odForwardOnly, only show Forward button */}
                         {isOd && odForwardOnly ? (
                           onForward && (
                             <Button size="icon" variant="ghost" className="h-8 w-8 text-status-forwarded hover:bg-accent" onClick={() => onForward(req.id)}>

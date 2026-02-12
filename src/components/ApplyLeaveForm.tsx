@@ -63,7 +63,6 @@ export const ApplyLeaveForm = () => {
     });
   };
 
-  // HOD info note
   const isHod = user?.role === 'hod';
 
   return (
@@ -95,15 +94,18 @@ export const ApplyLeaveForm = () => {
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="assignedFaculty">Assigned Faculty</Label>
-            <Input
-              id="assignedFaculty"
-              placeholder="Enter assigned faculty name"
-              value={assignedFaculty}
-              onChange={(e) => setAssignedFaculty(e.target.value)}
-            />
-          </div>
+          {/* Hide assigned faculty for HOD - not required */}
+          {!isHod && (
+            <div className="space-y-2">
+              <Label htmlFor="assignedFaculty">Assigned Faculty</Label>
+              <Input
+                id="assignedFaculty"
+                placeholder="Enter assigned faculty name"
+                value={assignedFaculty}
+                onChange={(e) => setAssignedFaculty(e.target.value)}
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -118,14 +120,8 @@ export const ApplyLeaveForm = () => {
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Checkbox
-                id="halfday"
-                checked={isHalfDay}
-                onCheckedChange={(v) => setIsHalfDay(v === true)}
-              />
-              <Label htmlFor="halfday" className="text-sm font-normal cursor-pointer">
-                Half-day leave
-              </Label>
+              <Checkbox id="halfday" checked={isHalfDay} onCheckedChange={(v) => setIsHalfDay(v === true)} />
+              <Label htmlFor="halfday" className="text-sm font-normal cursor-pointer">Half-day leave</Label>
             </div>
             {fromDate && toDate && numberOfDays > 0 && (
               <div className="text-sm font-medium text-primary">
@@ -136,14 +132,7 @@ export const ApplyLeaveForm = () => {
 
           <div className="space-y-2">
             <Label htmlFor="reason">Reason</Label>
-            <Textarea
-              id="reason"
-              placeholder="Enter the reason for your leave..."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={4}
-              required
-            />
+            <Textarea id="reason" placeholder="Enter the reason for your leave..." value={reason} onChange={(e) => setReason(e.target.value)} rows={4} required />
           </div>
 
           <Button type="submit" className="w-full h-11 font-semibold" disabled={submitMutation.isPending}>

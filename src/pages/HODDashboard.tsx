@@ -10,19 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { LeaveBalanceTable } from '@/components/LeaveBalanceTable';
+import { useMyLeaveBalances } from '@/hooks/useLeaveBalances';
 
 const HODDashboard = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [searchName, setSearchName] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const { data: requests = [] } = useDepartmentLeaveRequests();
+  const { data: balances = [] } = useMyLeaveBalances();
   const { data: profilesMap = {} } = useProfilesMap();
   const { data: departmentsMap = {} } = useDepartmentsMap();
   const updateStatus = useUpdateLeaveStatus();
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  // Filter out HOD's own requests from the action list
   let filtered = requests.filter(r => r.user_id !== user?.id);
   if (filterType !== 'all') filtered = filtered.filter(r => r.leave_type === filterType);
   if (searchName) {
@@ -71,6 +73,11 @@ const HODDashboard = () => {
           ))}
         </div>
 
+        <div>
+          <h2 className="text-lg font-semibold mb-3">Leave Balance</h2>
+          <LeaveBalanceTable balances={balances} />
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-3">
           <Input placeholder="Search by faculty name..." value={searchName} onChange={(e) => setSearchName(e.target.value)} className="w-full sm:max-w-xs" />
           <Select value={filterType} onValueChange={setFilterType}>
@@ -93,15 +100,14 @@ const HODDashboard = () => {
           departmentsMap={departmentsMap}
           facultyClickable
           facultyBasePath="/hod"
+          showRoleInsteadOfDept
           onApprove={(id) => {
             const req = filtered.find(r => r.id === id);
-            // OD leaves: HOD can only forward, not approve
             if (req?.leave_type === 'od') return;
             updateStatus.mutate({ id, status: 'approved' });
           }}
           onReject={(id) => {
             const req = filtered.find(r => r.id === id);
-            // OD leaves: HOD can only forward, not reject
             if (req?.leave_type === 'od') return;
             updateStatus.mutate({ id, status: 'rejected' });
           }}
