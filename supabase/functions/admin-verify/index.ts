@@ -102,8 +102,40 @@ Deno.serve(async (req) => {
 
     if (action === "send_confirmation") {
       const { faculty_email, updated_values } = body;
-      console.log(`Confirmation email to ${faculty_email}:`, updated_values);
-      return new Response(JSON.stringify({ success: true, message: "Confirmation sent" }), {
+      
+      // Fetch the updated balances for the confirmation message
+      const { data: facultyUserId } = await supabase
+        .rpc('get_user_id_by_email', { _email: faculty_email });
+      
+      let balanceSummary = "Your leave quotas have been updated.";
+      if (facultyUserId) {
+        const { data: balances } = await supabase
+          .from("leave_balances")
+          .select("leave_type, opening, used")
+          .eq("user_id", facultyUserId);
+        
+        if (balances && balances.length > 0) {
+          const labels: Record<string, string> = {
+            casual: 'CL', earned: 'EL', medical: 'ML', od: 'OD', lop: 'LOP'
+          };
+          const lines = balances.map((b: any) => 
+            `${labels[b.leave_type] || b.leave_type}: Total=${b.opening}, Used=${b.used}`
+          ).join(', ');
+          balanceSummary = `Updated leave counts: ${lines}`;
+        }
+      }
+
+      // Create a notification for the faculty
+      if (facultyUserId) {
+        await supabase.from("notifications").insert({
+          user_id: facultyUserId,
+          message: `${balanceSummary}. Please logout and login again to see updated leaves.`,
+          type: "info",
+        });
+      }
+
+      console.log(`Confirmation for ${faculty_email}:`, balanceSummary);
+      return new Response(JSON.stringify({ success: true, message: "Confirmation sent to faculty" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

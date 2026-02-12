@@ -6,9 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Save, RefreshCw, ShieldCheck, Mail } from 'lucide-react';
+import { Save, RefreshCw, ShieldCheck, Mail, Plus, Minus } from 'lucide-react';
 
 interface FacultyBalance {
   id: string;
@@ -20,19 +19,19 @@ interface FacultyBalance {
   academic_year: string;
 }
 
+const LEAVE_TYPES = ['casual', 'earned', 'medical', 'od', 'lop'] as const;
+
 const leaveTypeLabels: Record<string, string> = {
-  casual: 'Casual Leave',
-  earned: 'Earned Leave',
-  medical: 'Medical Leave',
+  casual: 'Casual Leave (CL)',
+  earned: 'Earned Leave (EL)',
+  medical: 'Medical Leave (ML)',
   od: 'OD Leave',
-  special: 'Special Leave',
   lop: 'LOP Leave',
 };
 
 type Step = 'email' | 'verify' | 'edit';
 
 const AssistantAdmin = () => {
-  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -42,16 +41,16 @@ const AssistantAdmin = () => {
   const [verifiedFacultyId, setVerifiedFacultyId] = useState<string | null>(null);
   const [editedValues, setEditedValues] = useState<Record<string, number>>({});
 
-  const { data: balances = [], refetch: refetchBalances } = useQuery({
+  const { data: balances = [], isLoading: balancesLoading, refetch: refetchBalances } = useQuery({
     queryKey: ['faculty-balances', verifiedFacultyId],
-    enabled: !!verifiedFacultyId,
+    enabled: !!verifiedFacultyId && step === 'edit',
     queryFn: async () => {
       const { data, error } = await supabase
         .from('leave_balances')
         .select('*')
         .eq('user_id', verifiedFacultyId!);
       if (error) throw error;
-      return data as FacultyBalance[];
+      return (data as FacultyBalance[]).filter(b => LEAVE_TYPES.includes(b.leave_type as any));
     },
   });
 
@@ -65,10 +64,9 @@ const AssistantAdmin = () => {
       return data;
     },
     onSuccess: (data) => {
-      toast({ title: 'Code Sent', description: `Verification code sent to ${facultyEmail}. Check console for dev code.` });
-      // In dev mode, show code
+      toast({ title: 'Code Sent', description: `Verification code sent to ${facultyEmail}.` });
       if (data?._dev_code) {
-        toast({ title: 'Dev Code', description: `Code: ${data._dev_code}`, variant: 'default' });
+        toast({ title: 'Dev Code', description: `Code: ${data._dev_code}` });
       }
       setStep('verify');
     },
@@ -88,8 +86,9 @@ const AssistantAdmin = () => {
     },
     onSuccess: (data) => {
       setVerifiedFacultyId(data.faculty_user_id);
+      setEditedValues({});
       setStep('edit');
-      toast({ title: 'Verified', description: 'Faculty verified successfully.' });
+      toast({ title: 'Verified', description: 'Faculty verified. Leave balances loaded.' });
     },
     onError: (err: Error) => {
       toast({ title: 'Verification Failed', description: err.message, variant: 'destructive' });
@@ -99,20 +98,22 @@ const AssistantAdmin = () => {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const updates = Object.entries(editedValues);
+      if (updates.length === 0) throw new Error('No changes to save.');
       for (const [balanceId, newOpening] of updates) {
+        if (newOpening < 0) throw new Error('Leave values cannot be negative.');
         const { error } = await supabase
           .from('leave_balances')
           .update({ opening: newOpening })
           .eq('id', balanceId);
         if (error) throw error;
       }
-      // Send confirmation email
+      // Send confirmation
       await supabase.functions.invoke('admin-verify', {
         body: { action: 'send_confirmation', faculty_email: facultyEmail, updated_values: editedValues },
       });
     },
     onSuccess: () => {
-      toast({ title: 'Saved', description: 'Leave quotas updated. Confirmation sent to faculty.' });
+      toast({ title: 'Saved', description: 'Leave quotas updated successfully.' });
       setEditedValues({});
       queryClient.invalidateQueries({ queryKey: ['faculty-balances', verifiedFacultyId] });
     },
@@ -121,8 +122,21 @@ const AssistantAdmin = () => {
     },
   });
 
-  const handleValueChange = (balanceId: string, value: number) => {
-    setEditedValues(prev => ({ ...prev, [balanceId]: value }));
+  const handleIncrement = (balanceId: string, current: number) => {
+    setEditedValues(prev => ({ ...prev, [balanceId]: current + 1 }));
+  };
+
+  const handleDecrement = (balanceId: string, current: number) => {
+    if (current > 0) {
+      setEditedValues(prev => ({ ...prev, [balanceId]: current - 1 }));
+    }
+  };
+
+  const handleDirectInput = (balanceId: string, value: string) => {
+    const num = parseInt(value, 10);
+    if (!isNaN(num) && num >= 0) {
+      setEditedValues(prev => ({ ...prev, [balanceId]: num }));
+    }
   };
 
   const hasChanges = Object.keys(editedValues).length > 0;
@@ -215,14 +229,14 @@ const AssistantAdmin = () => {
         {step === 'edit' && (
           <Card className="border border-border">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between text-base">
-                <span className="flex items-center gap-2">
-                  <Settings className="w-4 h-4" /> Leave Balances — {facultyEmail}
-                </span>
+              <CardTitle className="text-base">
+                Leave Balances — {facultyEmail}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {balances.length === 0 ? (
+              {balancesLoading ? (
+                <p className="text-sm text-muted-foreground">Loading leave balances...</p>
+              ) : balances.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No leave balances found for this faculty.</p>
               ) : (
                 <>
@@ -230,49 +244,73 @@ const AssistantAdmin = () => {
                     {balances.map(b => {
                       const currentOpening = editedValues[b.id] ?? b.opening;
                       const available = currentOpening - b.used;
+                      const isEdited = editedValues[b.id] !== undefined;
                       return (
-                        <div key={b.id} className="flex items-center justify-between p-3 rounded-lg border border-border">
-                          <div className="flex-1">
+                        <div
+                          key={b.id}
+                          className={`flex items-center justify-between p-3 rounded-lg border ${isEdited ? 'border-primary bg-primary/5' : 'border-border'}`}
+                        >
+                          <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm">{leaveTypeLabels[b.leave_type] || b.leave_type}</p>
                             <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                              <span>Total: <strong className="text-foreground">{currentOpening}</strong></span>
-                              <span className="text-orange-600">Used: {b.used}</span>
+                              <span>Used: <strong className="text-orange-600">{b.used}</strong></span>
                               <span className={available < 0 ? 'text-red-600 font-semibold' : 'text-green-600'}>
-                                Available: {available < 0 ? `LOP (${available})` : available}
+                                Avail: {available < 0 ? `LOP (${Math.abs(available)})` : available}
                               </span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs">Total:</Label>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleDecrement(b.id, currentOpening)}
+                              disabled={currentOpening <= 0}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </Button>
                             <Input
                               type="number"
-                              className="w-20 h-8 text-sm"
+                              className="w-16 h-8 text-center text-sm"
                               value={currentOpening}
                               min={0}
-                              onChange={(e) => handleValueChange(b.id, Number(e.target.value))}
+                              onChange={(e) => handleDirectInput(b.id, e.target.value)}
                             />
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleIncrement(b.id, currentOpening)}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                  <div className="flex gap-3 mt-4">
-                    <Button 
-                      onClick={() => saveMutation.mutate()} 
-                      disabled={!hasChanges || saveMutation.isPending} 
+                  <div className="flex gap-3 mt-5">
+                    <Button
+                      onClick={() => saveMutation.mutate()}
+                      disabled={!hasChanges || saveMutation.isPending}
                       className="flex-1"
                     >
-                      <Save className="w-4 h-4 mr-1" /> Save
+                      <Save className="w-4 h-4 mr-1" /> SAVE
                     </Button>
-                    <Button 
-                      variant="secondary" 
-                      onClick={() => { refetchBalances(); setEditedValues({}); }} 
-                      disabled={saveMutation.isPending} 
+                    <Button
+                      variant="secondary"
+                      onClick={() => saveMutation.mutate()}
+                      disabled={!hasChanges || saveMutation.isPending}
                       className="flex-1"
                     >
-                      <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+                      <RefreshCw className="w-4 h-4 mr-1" /> UPDATE
                     </Button>
                   </div>
+                  {hasChanges && (
+                    <p className="text-xs text-muted-foreground mt-2 text-center">
+                      Changes highlighted. Press SAVE or UPDATE to apply.
+                    </p>
+                  )}
                 </>
               )}
             </CardContent>
