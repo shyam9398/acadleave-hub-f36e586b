@@ -21,6 +21,7 @@ import {
 import { NotificationPanel } from './NotificationPanel';
 import { useMyNotifications } from '@/hooks/useNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import collegeLogo from '@/assets/college-logo.png';
 
 interface DashboardLayoutProps {
@@ -156,6 +157,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <ThemeToggle className="text-muted-foreground" />
             <Button variant="ghost" size="icon" className="relative" onClick={() => setNotificationsOpen(!notificationsOpen)}>
               <Bell className="w-5 h-5 text-muted-foreground" />
               {unreadCount > 0 && (

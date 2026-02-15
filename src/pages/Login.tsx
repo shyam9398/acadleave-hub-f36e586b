@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Lock, Mail, UserCircle, Building, Calendar, Hash } from 'lucide-react';
 import collegeLogo from '@/assets/college-logo.png';
 import { useToast } from '@/hooks/use-toast';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface Department {
   id: string;
@@ -104,7 +105,10 @@ const Login = () => {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen relative">
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle className="text-muted-foreground hover:text-foreground" />
+      </div>
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -126,8 +130,8 @@ const Login = () => {
       </div>
 
       {/* Right Panel */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
-        <Card className="w-full max-w-md border-0 shadow-xl">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-12 bg-background">
+        <Card className="w-full max-w-md border-0 shadow-xl bg-card">
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-4 lg:hidden">
              <img src={collegeLogo} alt="College Logo" className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-contain" />
