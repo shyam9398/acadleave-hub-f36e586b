@@ -122,7 +122,7 @@ const Login = () => {
              <img src={collegeLogo} alt="College Logo" className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-contain" />
             </div>
             <CardTitle className="text-2xl font-bold">
-              {isSignUp ? 'Create Account' : 'Welcome Back'}
+              {isSignUp ? 'Create Account' : 'Welcome to CRR'}
             </CardTitle>
             <CardDescription>
               {isSignUp ? 'Register with your official email' : 'Sign in to your account'}
