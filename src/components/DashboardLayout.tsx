@@ -99,7 +99,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="h-16 flex items-center px-4 gap-3 border-b border-sidebar-border">
           <img src={collegeLogo} alt="College Logo" className="w-12 h-12 rounded-lg shrink-0 object-contain" />
           {(sidebarOpen || isMobile) && (
-            <span className="font-bold text-sm truncate flex-1">SCRCE Leave Mgmt</span>
+            <span className="font-bold text-sm truncate flex-1">SCRRCE Leave Mgmt</span>
           )}
           {isMobile && (
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(false)} className="text-sidebar-foreground shrink-0">
