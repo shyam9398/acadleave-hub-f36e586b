@@ -8,7 +8,7 @@ const typeLabels: Record<string, string> = {
   earned: 'Earned Leave',
   medical: 'Medical Leave',
   od: 'OD Leave',
-  special: 'Special Leave',
+  special: 'Instant Leave',
 };
 
 const typeOrder = ['casual', 'earned', 'medical', 'special', 'od'];
