@@ -187,6 +187,7 @@ export type Database = {
           department_id: string | null
           full_name: string
           id: string
+          unique_id: string | null
           updated_at: string
           user_id: string
           year_of_joining: number | null
@@ -196,6 +197,7 @@ export type Database = {
           department_id?: string | null
           full_name: string
           id?: string
+          unique_id?: string | null
           updated_at?: string
           user_id: string
           year_of_joining?: number | null
@@ -205,6 +207,7 @@ export type Database = {
           department_id?: string | null
           full_name?: string
           id?: string
+          unique_id?: string | null
           updated_at?: string
           user_id?: string
           year_of_joining?: number | null
