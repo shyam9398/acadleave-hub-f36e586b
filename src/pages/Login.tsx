@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Lock, Mail, UserCircle, Building, Calendar } from 'lucide-react';
+import { Lock, Mail, UserCircle, Building, Calendar, Hash } from 'lucide-react';
 import collegeLogo from '@/assets/college-logo.png';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,6 +23,7 @@ const Login = () => {
   const [role, setRole] = useState<UserRole | ''>('');
   const [departmentId, setDepartmentId] = useState('');
   const [yearOfJoining, setYearOfJoining] = useState('');
+  const [uniqueId, setUniqueId] = useState('');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -50,6 +51,12 @@ const Login = () => {
 
   const needsDepartment = role === 'faculty' || role === 'hod' || role === 'junior_assistant';
 
+  const validateUniqueId = (id: string) => {
+    const digits = (id.match(/[0-9]/g) || []).length;
+    const letters = (id.match(/[a-zA-Z]/g) || []).length;
+    return id.length === 16 && digits === 13 && letters === 3;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSignUp && !role) return;
@@ -61,10 +68,14 @@ const Login = () => {
       toast({ title: 'Please enter your year of joining', variant: 'destructive' });
       return;
     }
+    if (isSignUp && !validateUniqueId(uniqueId)) {
+      toast({ title: 'Invalid Unique ID', description: 'Must be exactly 16 characters: 13 digits and 3 letters.', variant: 'destructive' });
+      return;
+    }
 
     setSubmitting(true);
     if (isSignUp) {
-      const { error } = await signup(email, password, fullName, role as UserRole, needsDepartment ? departmentId : undefined, yearOfJoining ? parseInt(yearOfJoining) : undefined);
+      const { error } = await signup(email, password, fullName, role as UserRole, needsDepartment ? departmentId : undefined, yearOfJoining ? parseInt(yearOfJoining) : undefined, uniqueId);
       if (error) {
         toast({ title: 'Sign Up Failed', description: error, variant: 'destructive' });
       } else {
@@ -231,6 +242,22 @@ const Login = () => {
                         required
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="uniqueId">Unique ID</Label>
+                    <div className="relative">
+                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        id="uniqueId"
+                        placeholder="e.g. ABC1234567890123"
+                        value={uniqueId}
+                        onChange={(e) => setUniqueId(e.target.value.toUpperCase())}
+                        className="pl-10"
+                        maxLength={16}
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">16 characters: 13 digits and 3 letters</p>
                   </div>
                 </>
               )}
