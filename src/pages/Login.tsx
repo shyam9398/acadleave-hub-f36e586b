@@ -18,16 +18,16 @@ interface Department {
 }
 
 const FALLBACK_DEPARTMENTS: Department[] = [
-  { id: 'ai-ml', name: 'Artificial Intelligence & Machine Learning' },
-  { id: 'ai-ds', name: 'Artificial Intelligence and Data Science' },
-  { id: 'civil', name: 'Civil Engineering' },
-  { id: 'cse', name: 'Computer Science and Engineering' },
-  { id: 'cyber', name: 'Cyber Security' },
-  { id: 'eee', name: 'Electrical and Electronics Engineering' },
-  { id: 'ece', name: 'Electronics and Communication Engineering' },
-  { id: 'fyed', name: 'First Year Engineering Department' },
-  { id: 'it', name: 'Information Technology' },
-  { id: 'mech', name: 'Mechanical Engineering' },
+  { id: 'ada6c6cd-2464-4fa7-b922-b53f1704fbe4', name: 'Artificial Intelligence & Machine Learning' },
+  { id: '8edccca2-c4c6-49cf-b5f7-cfbc3345840e', name: 'Artificial Intelligence and Data Science' },
+  { id: '6b774107-f738-42cc-a3bc-128eb4b593d7', name: 'Civil Engineering' },
+  { id: '72087858-8ac7-42d2-ab8c-b7d9448e3901', name: 'Computer Science and Engineering' },
+  { id: '69f9561f-60f9-4737-b215-f117ccd21420', name: 'Cyber Security' },
+  { id: '4c045acf-6578-4a9f-aca9-b012d85f6353', name: 'Electrical and Electronics Engineering' },
+  { id: '1bec33d5-49a2-4a55-93ce-48f29f3fd854', name: 'Electronics and Communication Engineering' },
+  { id: '440a4b0f-7dd6-47cb-8beb-a7a52c05bb64', name: 'First Year Engineering Department' },
+  { id: 'fcd2737e-ded2-41e7-bd91-33e199faf065', name: 'Information Technology' },
+  { id: '1e707134-de4f-4661-860a-664a3a2dd2b4', name: 'Mechanical Engineering' },
 ];
 
 const Login = () => {
