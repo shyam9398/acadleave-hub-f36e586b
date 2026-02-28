@@ -17,6 +17,19 @@ interface Department {
   name: string;
 }
 
+const FALLBACK_DEPARTMENTS: Department[] = [
+  { id: 'ai-ml', name: 'Artificial Intelligence & Machine Learning' },
+  { id: 'ai-ds', name: 'Artificial Intelligence and Data Science' },
+  { id: 'civil', name: 'Civil Engineering' },
+  { id: 'cse', name: 'Computer Science and Engineering' },
+  { id: 'cyber', name: 'Cyber Security' },
+  { id: 'eee', name: 'Electrical and Electronics Engineering' },
+  { id: 'ece', name: 'Electronics and Communication Engineering' },
+  { id: 'fyed', name: 'First Year Engineering Department' },
+  { id: 'it', name: 'Information Technology' },
+  { id: 'mech', name: 'Mechanical Engineering' },
+];
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,7 +38,7 @@ const Login = () => {
   const [departmentId, setDepartmentId] = useState('');
   const [yearOfJoining, setYearOfJoining] = useState('');
   const [uniqueId, setUniqueId] = useState('');
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departments, setDepartments] = useState<Department[]>(FALLBACK_DEPARTMENTS);
   const [isSignUp, setIsSignUp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { login, signup, isAuthenticated, user, loading } = useAuth();
@@ -39,8 +52,6 @@ const Login = () => {
         setDepartments(data);
       } else if (error) {
         console.error('Failed to fetch departments:', error);
-        // Retry after 2 seconds
-        setTimeout(fetchDepartments, 2000);
       }
     };
     fetchDepartments();
