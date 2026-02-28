@@ -100,12 +100,21 @@ const Login = () => {
         toast({ title: 'Sign Up Failed', description: error, variant: 'destructive' });
       } else {
         toast({ title: 'Account Created', description: 'You are now logged in!' });
+        // Redirect based on selected role after signup
+        const routes: Record<UserRole, string> = {
+          faculty: '/faculty',
+          hod: '/hod',
+          junior_assistant: '/assistant',
+          principal: '/principal',
+        };
+        setTimeout(() => navigate(routes[role as UserRole]), 1500);
       }
     } else {
       const { error } = await login(email, password);
       if (error) {
         toast({ title: 'Login Failed', description: error, variant: 'destructive' });
       }
+      // Login redirect handled by useEffect watching user state
     }
     setSubmitting(false);
   };

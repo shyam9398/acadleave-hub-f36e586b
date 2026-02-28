@@ -25,39 +25,56 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-async function fetchAppUser(supaUser: SupaUser): Promise<AppUser | null> {
-  const { data: roles } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', supaUser.id)
-    .limit(1);
+async function fetchAppUser(supaUser: SupaUser): Promise<AppUser> {
+  try {
+    const { data: roles, error: rolesError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', supaUser.id)
+      .limit(1);
 
-  const role = (roles?.[0]?.role as UserRole) || 'faculty';
+    if (rolesError) console.error('Error fetching roles:', rolesError);
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, department_id')
-    .eq('user_id', supaUser.id)
-    .maybeSingle();
+    const role = (roles?.[0]?.role as UserRole) || 'faculty';
 
-  let departmentName = '';
-  if (profile?.department_id) {
-    const { data: dept } = await supabase
-      .from('departments')
-      .select('name')
-      .eq('id', profile.department_id)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('full_name, department_id')
+      .eq('user_id', supaUser.id)
       .maybeSingle();
-    departmentName = dept?.name || '';
-  }
 
-  return {
-    id: supaUser.id,
-    name: profile?.full_name || supaUser.email || '',
-    email: supaUser.email || '',
-    role,
-    department: departmentName,
-    departmentId: profile?.department_id || null,
-  };
+    if (profileError) console.error('Error fetching profile:', profileError);
+
+    let departmentName = '';
+    if (profile?.department_id) {
+      const { data: dept } = await supabase
+        .from('departments')
+        .select('name')
+        .eq('id', profile.department_id)
+        .maybeSingle();
+      departmentName = dept?.name || '';
+    }
+
+    return {
+      id: supaUser.id,
+      name: profile?.full_name || supaUser.email || '',
+      email: supaUser.email || '',
+      role,
+      department: departmentName,
+      departmentId: profile?.department_id || null,
+    };
+  } catch (err) {
+    console.error('fetchAppUser failed:', err);
+    // Return a default user so redirect still works
+    return {
+      id: supaUser.id,
+      name: supaUser.email || '',
+      email: supaUser.email || '',
+      role: (supaUser.user_metadata?.role as UserRole) || 'faculty',
+      department: '',
+      departmentId: supaUser.user_metadata?.department_id || null,
+    };
+  }
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
