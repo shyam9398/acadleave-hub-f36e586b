@@ -105,37 +105,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message || null };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      return { error: error?.message || null };
+    } catch (err: any) {
+      if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
+        return { error: 'Network error: Please check your internet connection, disable ad blockers, or try a different browser.' };
+      }
+      return { error: err?.message || 'An unexpected error occurred' };
+    }
   };
 
   const signup = async (email: string, password: string, fullName: string, role: UserRole, departmentId?: string, yearOfJoining?: number, uniqueId?: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-        data: {
-          full_name: fullName,
-          role,
-          department_id: departmentId || null,
-          year_of_joining: yearOfJoining || null,
-          unique_id: uniqueId || null,
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: {
+            full_name: fullName,
+            role,
+            department_id: departmentId || null,
+            year_of_joining: yearOfJoining || null,
+            unique_id: uniqueId || null,
+          },
         },
-      },
-    });
-    if (error) {
-      let msg = error.message;
-      if (msg.includes('unique constraint') && msg.includes('unique_id')) {
-        msg = 'This Unique ID is already registered. Please check your ID and try again.';
-      } else if (msg.includes('unique constraint')) {
-        msg = 'An account with these details already exists.';
-      } else if (msg.includes('Database error')) {
-        msg = 'Registration failed due to a database error. The Unique ID may already be in use.';
+      });
+      if (error) {
+        let msg = error.message;
+        if (msg.includes('unique constraint') && msg.includes('unique_id')) {
+          msg = 'This Unique ID is already registered. Please check your ID and try again.';
+        } else if (msg.includes('unique constraint')) {
+          msg = 'An account with these details already exists.';
+        } else if (msg.includes('Database error')) {
+          msg = 'Registration failed due to a database error. The Unique ID may already be in use.';
+        }
+        return { error: msg };
       }
-      return { error: msg };
+      return { error: null };
+    } catch (err: any) {
+      if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
+        return { error: 'Network error: Please check your internet connection, disable ad blockers, or try a different browser.' };
+      }
+      return { error: err?.message || 'An unexpected error occurred' };
     }
-    return { error: null };
   };
 
   const logout = async () => {
