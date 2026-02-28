@@ -33,9 +33,17 @@ const Login = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.from('departments').select('id, name').order('name').then(({ data }) => {
-      if (data) setDepartments(data);
-    });
+    const fetchDepartments = async () => {
+      const { data, error } = await supabase.from('departments').select('id, name').order('name');
+      if (data && data.length > 0) {
+        setDepartments(data);
+      } else if (error) {
+        console.error('Failed to fetch departments:', error);
+        // Retry after 2 seconds
+        setTimeout(fetchDepartments, 2000);
+      }
+    };
+    fetchDepartments();
   }, []);
 
   useEffect(() => {
