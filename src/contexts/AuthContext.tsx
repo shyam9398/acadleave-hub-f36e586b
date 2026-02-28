@@ -124,7 +124,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         },
       },
     });
-    return { error: error?.message || null };
+    if (error) {
+      let msg = error.message;
+      if (msg.includes('unique constraint') && msg.includes('unique_id')) {
+        msg = 'This Unique ID is already registered. Please check your ID and try again.';
+      } else if (msg.includes('unique constraint')) {
+        msg = 'An account with these details already exists.';
+      } else if (msg.includes('Database error')) {
+        msg = 'Registration failed due to a database error. The Unique ID may already be in use.';
+      }
+      return { error: msg };
+    }
+    return { error: null };
   };
 
   const logout = async () => {
