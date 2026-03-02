@@ -63,11 +63,8 @@ const AssistantAdmin = () => {
       if (data?.error) throw new Error(data.error);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({ title: 'Code Sent', description: `Verification code sent to ${facultyEmail}.` });
-      if (data?._dev_code) {
-        toast({ title: 'Dev Code', description: `Code: ${data._dev_code}` });
-      }
       setStep('verify');
     },
     onError: (err: Error) => {
