@@ -65,6 +65,36 @@ export type Database = {
         }
         Relationships: []
       }
+      leave_audit_logs: {
+        Row: {
+          created_at: string
+          edited_by: string
+          faculty_id: string
+          id: string
+          leave_type: string
+          new_value: Json
+          previous_value: Json
+        }
+        Insert: {
+          created_at?: string
+          edited_by: string
+          faculty_id: string
+          id?: string
+          leave_type: string
+          new_value?: Json
+          previous_value?: Json
+        }
+        Update: {
+          created_at?: string
+          edited_by?: string
+          faculty_id?: string
+          id?: string
+          leave_type?: string
+          new_value?: Json
+          previous_value?: Json
+        }
+        Relationships: []
+      }
       leave_balances: {
         Row: {
           academic_year: string
