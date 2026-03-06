@@ -5,16 +5,16 @@ import {
 
 const typeLabels: Record<string, string> = {
   casual: 'Casual Leave',
-  earned: 'Earned Leave',
   medical: 'Medical Leave',
-  od: 'OD Leave',
-  special: 'Instant Leave',
+  earned: 'Earned Leave',
+  od: 'On Duty',
 };
 
-const typeOrder = ['casual', 'earned', 'medical', 'special', 'od'];
+const typeOrder = ['casual', 'medical', 'earned', 'od'];
 
 export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] }) => {
-  const sorted = [...balances].sort(
+  const filtered = balances.filter(b => typeOrder.includes(b.leave_type));
+  const sorted = [...filtered].sort(
     (a, b) => typeOrder.indexOf(a.leave_type) - typeOrder.indexOf(b.leave_type)
   );
 
@@ -25,7 +25,7 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
           <TableRow className="bg-muted/50 border-b-2 border-border">
             <TableHead className="font-semibold text-center w-12 text-xs">Sl.No</TableHead>
             <TableHead className="font-semibold text-xs">Leave Type</TableHead>
-            <TableHead className="font-semibold text-center text-xs text-muted-foreground">Total</TableHead>
+            <TableHead className="font-semibold text-center text-xs">Total</TableHead>
             <TableHead className="font-semibold text-center text-xs">Used</TableHead>
             <TableHead className="font-semibold text-center text-xs">Remaining</TableHead>
             <TableHead className="font-semibold text-center text-xs">Available</TableHead>
@@ -34,23 +34,23 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
         <TableBody>
           {sorted.map((b, idx) => {
             const isOd = b.leave_type === 'od';
-            const remaining = isOd ? 0 : (b.opening - b.used);
-            const available = isOd ? b.used : (b.available ?? remaining);
-            const total = isOd ? '—' : b.opening;
-            const usedVal = isOd ? `+${b.used}` : b.used;
-            const remainingVal = isOd ? '—' : (remaining < 0 ? `${remaining} (LOP)` : remaining);
-            const availableVal = isOd ? `+${b.used}` : (available < 0 ? 0 : available);
+            const total = b.opening;
+            const used = b.used;
+            const remaining = total - used;
+            const available = remaining;
 
             return (
               <TableRow key={b.id} className="border-b border-border/50">
                 <TableCell className="text-center text-xs text-muted-foreground py-3">{idx + 1}</TableCell>
                 <TableCell className="font-medium text-sm py-3">{typeLabels[b.leave_type]}</TableCell>
-                <TableCell className="text-center font-semibold text-sm py-3 text-muted-foreground">{total}</TableCell>
-                <TableCell className="text-center font-semibold text-sm py-3 text-[hsl(var(--leave-used))]">{usedVal}</TableCell>
-                <TableCell className={`text-center font-semibold text-sm py-3 ${remaining < 0 && !isOd ? 'text-[hsl(var(--leave-remaining))]' : 'text-[hsl(var(--leave-remaining))]'}`}>
-                  {remainingVal}
+                <TableCell className="text-center font-semibold text-sm py-3">{total}</TableCell>
+                <TableCell className="text-center font-semibold text-sm py-3 text-[hsl(var(--leave-used))]">{used}</TableCell>
+                <TableCell className={`text-center font-semibold text-sm py-3 ${remaining < 0 ? 'text-destructive' : 'text-[hsl(var(--leave-remaining))]'}`}>
+                  {remaining < 0 && !isOd ? `${remaining} (LOP)` : remaining}
                 </TableCell>
-                <TableCell className="text-center font-semibold text-sm py-3 text-[hsl(var(--leave-available))]">{availableVal}</TableCell>
+                <TableCell className={`text-center font-semibold text-sm py-3 ${available < 0 ? 'text-destructive' : 'text-[hsl(var(--leave-available))]'}`}>
+                  {available}
+                </TableCell>
               </TableRow>
             );
           })}
