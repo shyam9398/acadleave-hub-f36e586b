@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Save, RefreshCw, ShieldCheck, Mail, Plus, Minus } from 'lucide-react';
+import { Save, RefreshCw, Mail, Plus, Minus, Search } from 'lucide-react';
 
 interface FacultyBalance {
   id: string;
@@ -19,78 +19,61 @@ interface FacultyBalance {
   academic_year: string;
 }
 
-const LEAVE_TYPES = ['casual', 'earned', 'medical', 'od', 'lop'] as const;
+const LEAVE_TYPES = ['casual', 'earned', 'medical', 'od'] as const;
 
 const leaveTypeLabels: Record<string, string> = {
   casual: 'Casual Leave (CL)',
   earned: 'Earned Leave (EL)',
   medical: 'Medical Leave (ML)',
   od: 'OD Leave',
-  lop: 'LOP Leave',
 };
-
-type Step = 'email' | 'verify' | 'edit';
 
 const AssistantAdmin = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [step, setStep] = useState<Step>('email');
+  const [step, setStep] = useState<'email' | 'edit'>('email');
   const [facultyEmail, setFacultyEmail] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [verifiedFacultyId, setVerifiedFacultyId] = useState<string | null>(null);
+  const [facultyUserId, setFacultyUserId] = useState<string | null>(null);
   const [editedValues, setEditedValues] = useState<Record<string, number>>({});
+  const [lookupLoading, setLookupLoading] = useState(false);
 
-  const { data: balances = [], isLoading: balancesLoading, refetch: refetchBalances } = useQuery({
-    queryKey: ['faculty-balances', verifiedFacultyId],
-    enabled: !!verifiedFacultyId && step === 'edit',
+  const { data: balances = [], isLoading: balancesLoading } = useQuery({
+    queryKey: ['faculty-balances', facultyUserId],
+    enabled: !!facultyUserId && step === 'edit',
     queryFn: async () => {
       const { data, error } = await supabase
         .from('leave_balances')
         .select('*')
-        .eq('user_id', verifiedFacultyId!);
+        .eq('user_id', facultyUserId!);
       if (error) throw error;
-      return (data as FacultyBalance[]).filter(b => LEAVE_TYPES.includes(b.leave_type as any));
+      return (data as FacultyBalance[]).filter(b =>
+        LEAVE_TYPES.includes(b.leave_type as any)
+      );
     },
   });
 
-  const sendCodeMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('admin-verify', {
-        body: { action: 'send_code', faculty_email: facultyEmail },
+  const handleLookup = async () => {
+    if (!facultyEmail.trim()) return;
+    setLookupLoading(true);
+    try {
+      const { data, error } = await supabase.rpc('get_user_id_by_email', {
+        _email: facultyEmail.trim().toLowerCase(),
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
-    },
-    onSuccess: () => {
-      toast({ title: 'Code Sent', description: `Verification code sent to ${facultyEmail}.` });
-      setStep('verify');
-    },
-    onError: (err: Error) => {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
-    },
-  });
-
-  const verifyCodeMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('admin-verify', {
-        body: { action: 'verify_code', faculty_email: facultyEmail, code: verificationCode },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
-    },
-    onSuccess: (data) => {
-      setVerifiedFacultyId(data.faculty_user_id);
+      if (error || !data) {
+        toast({ title: 'Not Found', description: 'Faculty email not found in system.', variant: 'destructive' });
+        return;
+      }
+      setFacultyUserId(data);
       setEditedValues({});
       setStep('edit');
-      toast({ title: 'Verified', description: 'Faculty verified. Leave balances loaded.' });
-    },
-    onError: (err: Error) => {
-      toast({ title: 'Verification Failed', description: err.message, variant: 'destructive' });
-    },
-  });
+      toast({ title: 'Faculty Found', description: 'Leave balances loaded.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setLookupLoading(false);
+    }
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -98,21 +81,28 @@ const AssistantAdmin = () => {
       if (updates.length === 0) throw new Error('No changes to save.');
       for (const [balanceId, newOpening] of updates) {
         if (newOpening < 0) throw new Error('Leave values cannot be negative.');
+        const balance = balances.find(b => b.id === balanceId);
+        // Log audit
+        if (balance) {
+          await supabase.from('leave_audit_logs').insert({
+            faculty_id: facultyUserId!,
+            edited_by: (await supabase.auth.getUser()).data.user!.id,
+            leave_type: balance.leave_type,
+            previous_value: { opening: balance.opening, used: balance.used },
+            new_value: { opening: newOpening, used: balance.used },
+          });
+        }
         const { error } = await supabase
           .from('leave_balances')
           .update({ opening: newOpening })
           .eq('id', balanceId);
         if (error) throw error;
       }
-      // Send confirmation
-      await supabase.functions.invoke('admin-verify', {
-        body: { action: 'send_confirmation', faculty_email: facultyEmail, updated_values: editedValues },
-      });
     },
     onSuccess: () => {
       toast({ title: 'Saved', description: 'Leave quotas updated successfully.' });
       setEditedValues({});
-      queryClient.invalidateQueries({ queryKey: ['faculty-balances', verifiedFacultyId] });
+      queryClient.invalidateQueries({ queryKey: ['faculty-balances', facultyUserId] });
     },
     onError: (err: Error) => {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -141,8 +131,7 @@ const AssistantAdmin = () => {
   const resetFlow = () => {
     setStep('email');
     setFacultyEmail('');
-    setVerificationCode('');
-    setVerifiedFacultyId(null);
+    setFacultyUserId(null);
     setEditedValues({});
   };
 
@@ -152,7 +141,7 @@ const AssistantAdmin = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold mb-1">Admin - Leave Quota Management</h1>
-            <p className="text-muted-foreground text-sm">Verify faculty and manage leave quotas</p>
+            <p className="text-muted-foreground text-sm">Search faculty and manage leave quotas</p>
           </div>
           {step !== 'email' && (
             <Button variant="outline" size="sm" onClick={resetFlow}>
@@ -161,12 +150,12 @@ const AssistantAdmin = () => {
           )}
         </div>
 
-        {/* Step 1: Faculty Email */}
+        {/* Step 1: Faculty Email Lookup */}
         {step === 'email' && (
           <Card className="border border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <Mail className="w-4 h-4" /> Step 1: Enter Faculty Email
+                <Mail className="w-4 h-4" /> Search Faculty by Email
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -177,52 +166,22 @@ const AssistantAdmin = () => {
                   placeholder="faculty@college.edu"
                   value={facultyEmail}
                   onChange={(e) => setFacultyEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
                 />
               </div>
               <Button
-                onClick={() => sendCodeMutation.mutate()}
-                disabled={!facultyEmail || sendCodeMutation.isPending}
+                onClick={handleLookup}
+                disabled={!facultyEmail || lookupLoading}
                 className="w-full"
               >
-                {sendCodeMutation.isPending ? 'Sending...' : 'Send Verification Code'}
+                <Search className="w-4 h-4 mr-1" />
+                {lookupLoading ? 'Searching...' : 'Search Faculty'}
               </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Step 2: Verify Code */}
-        {step === 'verify' && (
-          <Card className="border border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ShieldCheck className="w-4 h-4" /> Step 2: Enter Verification Code
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                A verification code has been sent to <strong>{facultyEmail}</strong>
-              </p>
-              <div className="space-y-2">
-                <Label>Verification Code</Label>
-                <Input
-                  placeholder="Enter 6-digit code"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  maxLength={6}
-                />
-              </div>
-              <Button
-                onClick={() => verifyCodeMutation.mutate()}
-                disabled={verificationCode.length !== 6 || verifyCodeMutation.isPending}
-                className="w-full"
-              >
-                {verifyCodeMutation.isPending ? 'Verifying...' : 'Verify Code'}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 3: Edit Leave Balances */}
+        {/* Step 2: Edit Leave Balances */}
         {step === 'edit' && (
           <Card className="border border-border">
             <CardHeader>
@@ -240,7 +199,7 @@ const AssistantAdmin = () => {
                   <div className="space-y-3">
                     {balances.map(b => {
                       const currentOpening = editedValues[b.id] ?? b.opening;
-                      const available = currentOpening - b.used;
+                      const remaining = currentOpening - b.used;
                       const isEdited = editedValues[b.id] !== undefined;
                       return (
                         <div
@@ -250,9 +209,9 @@ const AssistantAdmin = () => {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm">{leaveTypeLabels[b.leave_type] || b.leave_type}</p>
                             <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
-                              <span>Used: <strong className="text-orange-600">{b.used}</strong></span>
-                              <span className={available < 0 ? 'text-red-600 font-semibold' : 'text-green-600'}>
-                                Avail: {available < 0 ? `LOP (${Math.abs(available)})` : available}
+                              <span>Used: <strong className="text-[hsl(var(--leave-used))]">{b.used}</strong></span>
+                              <span className={remaining < 0 ? 'text-destructive font-semibold' : 'text-[hsl(var(--leave-available))]'}>
+                                Remaining: {remaining < 0 ? `LOP (${Math.abs(remaining)})` : remaining}
                               </span>
                             </div>
                           </div>
@@ -294,18 +253,10 @@ const AssistantAdmin = () => {
                     >
                       <Save className="w-4 h-4 mr-1" /> SAVE
                     </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() => saveMutation.mutate()}
-                      disabled={!hasChanges || saveMutation.isPending}
-                      className="flex-1"
-                    >
-                      <RefreshCw className="w-4 h-4 mr-1" /> UPDATE
-                    </Button>
                   </div>
                   {hasChanges && (
                     <p className="text-xs text-muted-foreground mt-2 text-center">
-                      Changes highlighted. Press SAVE or UPDATE to apply.
+                      Changes highlighted. Press SAVE to apply.
                     </p>
                   )}
                 </>
