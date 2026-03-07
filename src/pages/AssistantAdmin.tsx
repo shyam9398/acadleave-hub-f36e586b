@@ -66,11 +66,25 @@ const AssistantAdmin = () => {
     toast({ title: 'Code Generated', description: 'Check the popup at the bottom of the page.' });
   }, [verifyEmail, toast]);
 
+  const checkSameDepartment = async (targetUserId: string): Promise<boolean> => {
+    const { data: myProfile } = await supabase
+      .from('profiles')
+      .select('department_id')
+      .eq('user_id', (await supabase.auth.getUser()).data.user!.id)
+      .single();
+    const { data: facultyProfile } = await supabase
+      .from('profiles')
+      .select('department_id')
+      .eq('user_id', targetUserId)
+      .single();
+    if (!myProfile?.department_id || !facultyProfile?.department_id) return false;
+    return myProfile.department_id === facultyProfile.department_id;
+  };
+
   const handleVerifyCode = useCallback(async () => {
     if (codeInput === devCode) {
       setDevCode(null);
       toast({ title: 'Verified', description: 'Admin access granted. Loading faculty data...' });
-      // Auto-lookup the faculty using the entered email
       const email = verifyEmail.trim().toLowerCase();
       setFacultyEmail(email);
       setLookupLoading(true);
@@ -80,9 +94,15 @@ const AssistantAdmin = () => {
           toast({ title: 'Not Found', description: 'Faculty email not found. You can search manually.', variant: 'destructive' });
           setStep('email');
         } else {
-          setFacultyUserId(data);
-          setEditedValues({});
-          setStep('edit');
+          const sameDept = await checkSameDepartment(data);
+          if (!sameDept) {
+            toast({ title: 'Access Denied', description: 'This faculty is not in your department.', variant: 'destructive' });
+            setStep('email');
+          } else {
+            setFacultyUserId(data);
+            setEditedValues({});
+            setStep('edit');
+          }
         }
       } catch {
         setStep('email');
@@ -118,6 +138,11 @@ const AssistantAdmin = () => {
       });
       if (error || !data) {
         toast({ title: 'Not Found', description: 'Faculty email not found in system.', variant: 'destructive' });
+        return;
+      }
+      const sameDept = await checkSameDepartment(data);
+      if (!sameDept) {
+        toast({ title: 'Access Denied', description: 'This faculty is not in your department.', variant: 'destructive' });
         return;
       }
       setFacultyUserId(data);
@@ -366,16 +391,6 @@ const AssistantAdmin = () => {
         )}
       </div>
 
-      {/* Dev Code Popup - fixed at bottom */}
-      {devCode && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4">
-          <KeyRound className="w-5 h-5" />
-          <div>
-            <p className="text-xs opacity-80">Your verification code (expires in {codeExpiry}s)</p>
-            <p className="text-2xl font-bold tracking-widest">{devCode}</p>
-          </div>
-        </div>
-      )}
     </DashboardLayout>
   );
 };
