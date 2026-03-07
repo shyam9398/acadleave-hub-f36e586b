@@ -140,6 +140,11 @@ const AssistantAdmin = () => {
         toast({ title: 'Not Found', description: 'Faculty email not found in system.', variant: 'destructive' });
         return;
       }
+      const sameDept = await checkSameDepartment(data);
+      if (!sameDept) {
+        toast({ title: 'Access Denied', description: 'This faculty is not in your department.', variant: 'destructive' });
+        return;
+      }
       setFacultyUserId(data);
       setEditedValues({});
       setStep('edit');
