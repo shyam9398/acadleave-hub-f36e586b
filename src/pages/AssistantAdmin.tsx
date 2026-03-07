@@ -391,16 +391,6 @@ const AssistantAdmin = () => {
         )}
       </div>
 
-      {/* Dev Code Popup - fixed at bottom */}
-      {devCode && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4">
-          <KeyRound className="w-5 h-5" />
-          <div>
-            <p className="text-xs opacity-80">Your verification code (expires in {codeExpiry}s)</p>
-            <p className="text-2xl font-bold tracking-widest">{devCode}</p>
-          </div>
-        </div>
-      )}
     </DashboardLayout>
   );
 };
