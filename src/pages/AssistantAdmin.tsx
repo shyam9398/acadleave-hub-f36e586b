@@ -66,11 +66,25 @@ const AssistantAdmin = () => {
     toast({ title: 'Code Generated', description: 'Check the popup at the bottom of the page.' });
   }, [verifyEmail, toast]);
 
+  const checkSameDepartment = async (targetUserId: string): Promise<boolean> => {
+    const { data: myProfile } = await supabase
+      .from('profiles')
+      .select('department_id')
+      .eq('user_id', (await supabase.auth.getUser()).data.user!.id)
+      .single();
+    const { data: facultyProfile } = await supabase
+      .from('profiles')
+      .select('department_id')
+      .eq('user_id', targetUserId)
+      .single();
+    if (!myProfile?.department_id || !facultyProfile?.department_id) return false;
+    return myProfile.department_id === facultyProfile.department_id;
+  };
+
   const handleVerifyCode = useCallback(async () => {
     if (codeInput === devCode) {
       setDevCode(null);
       toast({ title: 'Verified', description: 'Admin access granted. Loading faculty data...' });
-      // Auto-lookup the faculty using the entered email
       const email = verifyEmail.trim().toLowerCase();
       setFacultyEmail(email);
       setLookupLoading(true);
@@ -80,9 +94,15 @@ const AssistantAdmin = () => {
           toast({ title: 'Not Found', description: 'Faculty email not found. You can search manually.', variant: 'destructive' });
           setStep('email');
         } else {
-          setFacultyUserId(data);
-          setEditedValues({});
-          setStep('edit');
+          const sameDept = await checkSameDepartment(data);
+          if (!sameDept) {
+            toast({ title: 'Access Denied', description: 'This faculty is not in your department.', variant: 'destructive' });
+            setStep('email');
+          } else {
+            setFacultyUserId(data);
+            setEditedValues({});
+            setStep('edit');
+          }
         }
       } catch {
         setStep('email');
