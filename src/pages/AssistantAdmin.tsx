@@ -66,15 +66,33 @@ const AssistantAdmin = () => {
     toast({ title: 'Code Generated', description: 'Check the popup at the bottom of the page.' });
   }, [verifyEmail, toast]);
 
-  const handleVerifyCode = useCallback(() => {
+  const handleVerifyCode = useCallback(async () => {
     if (codeInput === devCode) {
-      setStep('email');
       setDevCode(null);
-      toast({ title: 'Verified', description: 'Admin access granted.' });
+      toast({ title: 'Verified', description: 'Admin access granted. Loading faculty data...' });
+      // Auto-lookup the faculty using the entered email
+      const email = verifyEmail.trim().toLowerCase();
+      setFacultyEmail(email);
+      setLookupLoading(true);
+      try {
+        const { data, error } = await supabase.rpc('get_user_id_by_email', { _email: email });
+        if (error || !data) {
+          toast({ title: 'Not Found', description: 'Faculty email not found. You can search manually.', variant: 'destructive' });
+          setStep('email');
+        } else {
+          setFacultyUserId(data);
+          setEditedValues({});
+          setStep('edit');
+        }
+      } catch {
+        setStep('email');
+      } finally {
+        setLookupLoading(false);
+      }
     } else {
       toast({ title: 'Invalid Code', description: 'The code is incorrect or expired.', variant: 'destructive' });
     }
-  }, [codeInput, devCode, toast]);
+  }, [codeInput, devCode, verifyEmail, toast]);
 
   const { data: balances = [], isLoading: balancesLoading } = useQuery({
     queryKey: ['faculty-balances', facultyUserId],
