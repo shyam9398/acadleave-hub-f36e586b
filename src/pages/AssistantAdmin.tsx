@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Save, RefreshCw, Mail, Plus, Minus, Search } from 'lucide-react';
+import { Save, RefreshCw, Mail, Plus, Minus, Search, ShieldCheck, KeyRound } from 'lucide-react';
 
 interface FacultyBalance {
   id: string;
@@ -32,11 +32,49 @@ const AssistantAdmin = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [step, setStep] = useState<'email' | 'edit'>('email');
+  const [step, setStep] = useState<'verify' | 'email' | 'edit'>('verify');
+  const [verifyEmail, setVerifyEmail] = useState('');
+  const [devCode, setDevCode] = useState<string | null>(null);
+  const [codeInput, setCodeInput] = useState('');
+  const [codeExpiry, setCodeExpiry] = useState(0);
   const [facultyEmail, setFacultyEmail] = useState('');
   const [facultyUserId, setFacultyUserId] = useState<string | null>(null);
   const [editedValues, setEditedValues] = useState<Record<string, number>>({});
   const [lookupLoading, setLookupLoading] = useState(false);
+
+  // Countdown timer for dev code
+  useEffect(() => {
+    if (codeExpiry <= 0 || !devCode) return;
+    const timer = setInterval(() => {
+      setCodeExpiry(prev => {
+        if (prev <= 1) {
+          setDevCode(null);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [devCode, codeExpiry]);
+
+  const handleSendCode = useCallback(() => {
+    if (!verifyEmail.trim()) return;
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    setDevCode(code);
+    setCodeExpiry(10);
+    setCodeInput('');
+    toast({ title: 'Code Generated', description: 'Check the popup at the bottom of the page.' });
+  }, [verifyEmail, toast]);
+
+  const handleVerifyCode = useCallback(() => {
+    if (codeInput === devCode) {
+      setStep('email');
+      setDevCode(null);
+      toast({ title: 'Verified', description: 'Admin access granted.' });
+    } else {
+      toast({ title: 'Invalid Code', description: 'The code is incorrect or expired.', variant: 'destructive' });
+    }
+  }, [codeInput, devCode, toast]);
 
   const { data: balances = [], isLoading: balancesLoading } = useQuery({
     queryKey: ['faculty-balances', facultyUserId],
@@ -82,7 +120,6 @@ const AssistantAdmin = () => {
       for (const [balanceId, newOpening] of updates) {
         if (newOpening < 0) throw new Error('Leave values cannot be negative.');
         const balance = balances.find(b => b.id === balanceId);
-        // Log audit
         if (balance) {
           await supabase.from('leave_audit_logs').insert({
             faculty_id: facultyUserId!,
@@ -143,12 +180,57 @@ const AssistantAdmin = () => {
             <h1 className="text-2xl font-bold mb-1">Admin - Leave Quota Management</h1>
             <p className="text-muted-foreground text-sm">Search faculty and manage leave quotas</p>
           </div>
-          {step !== 'email' && (
+          {step === 'edit' && (
             <Button variant="outline" size="sm" onClick={resetFlow}>
               <RefreshCw className="w-4 h-4 mr-1" /> Start Over
             </Button>
           )}
         </div>
+
+        {/* Step 0: Admin Verification */}
+        {step === 'verify' && (
+          <Card className="border border-border">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShieldCheck className="w-4 h-4" /> Admin Verification
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Your Email ID</Label>
+                <Input
+                  type="email"
+                  placeholder="admin@college.edu"
+                  value={verifyEmail}
+                  onChange={(e) => setVerifyEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendCode()}
+                />
+              </div>
+              <Button onClick={handleSendCode} disabled={!verifyEmail.trim()} className="w-full">
+                <KeyRound className="w-4 h-4 mr-1" /> Send Verification Code
+              </Button>
+
+              {devCode && (
+                <div className="space-y-3 pt-2">
+                  <div className="space-y-2">
+                    <Label>Enter Verification Code</Label>
+                    <Input
+                      type="text"
+                      maxLength={6}
+                      placeholder="Enter 6-digit code"
+                      value={codeInput}
+                      onChange={(e) => setCodeInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleVerifyCode()}
+                    />
+                  </div>
+                  <Button onClick={handleVerifyCode} disabled={codeInput.length !== 6} className="w-full">
+                    Verify & Login
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Step 1: Faculty Email Lookup */}
         {step === 'email' && (
@@ -265,6 +347,17 @@ const AssistantAdmin = () => {
           </Card>
         )}
       </div>
+
+      {/* Dev Code Popup - fixed at bottom */}
+      {devCode && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4">
+          <KeyRound className="w-5 h-5" />
+          <div>
+            <p className="text-xs opacity-80">Your verification code (expires in {codeExpiry}s)</p>
+            <p className="text-2xl font-bold tracking-widest">{devCode}</p>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };
