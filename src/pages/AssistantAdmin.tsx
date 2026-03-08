@@ -26,6 +26,7 @@ const leaveTypeLabels: Record<string, string> = {
   earned: 'Earned Leave (EL)',
   medical: 'Medical Leave (ML)',
   od: 'OD Leave',
+  lop: 'Loss of Pay (LOP)',
 };
 
 const AssistantAdmin = () => {
