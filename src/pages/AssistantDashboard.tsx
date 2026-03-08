@@ -9,6 +9,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { LeaveBalanceTable } from '@/components/LeaveBalanceTable';
 import { useMyLeaveBalances } from '@/hooks/useLeaveBalances';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AssistantDashboard = () => {
   const { data: requests = [] } = useDepartmentLeaveRequests();
