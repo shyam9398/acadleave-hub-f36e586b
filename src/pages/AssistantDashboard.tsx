@@ -64,11 +64,12 @@ const AssistantDashboard = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           {[
             { label: 'Total Records', value: stats.total, icon: <FileText className="w-5 h-5" />, color: 'text-primary' },
             { label: 'Approved', value: stats.approved, icon: <Users className="w-5 h-5" />, color: 'text-status-approved' },
             { label: 'Pending', value: stats.pending, icon: <Bell className="w-5 h-5" />, color: 'text-status-pending' },
+            { label: 'Faculty in Branch', value: facultyCount, icon: <Users className="w-5 h-5" />, color: 'text-primary' },
           ].map(s => (
             <Card key={s.label} className="border border-border">
               <CardContent className="pt-4 pb-3 px-4 flex items-center gap-3">
