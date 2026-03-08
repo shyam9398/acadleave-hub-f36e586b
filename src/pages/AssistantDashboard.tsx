@@ -2,6 +2,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { LeaveRequestsTable } from '@/components/LeaveRequestsTable';
 import { useDepartmentLeaveRequests } from '@/hooks/useLeaveRequests';
 import { useProfilesMap, useDepartmentsMap } from '@/hooks/useProfiles';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Users, Bell, RefreshCw } from 'lucide-react';
