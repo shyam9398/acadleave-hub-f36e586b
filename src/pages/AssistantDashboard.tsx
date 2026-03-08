@@ -12,10 +12,25 @@ import { useMyLeaveBalances } from '@/hooks/useLeaveBalances';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AssistantDashboard = () => {
+  const { user } = useAuth();
   const { data: requests = [] } = useDepartmentLeaveRequests();
   const { data: balances = [] } = useMyLeaveBalances();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Count faculty in same department
+  const { data: facultyCount = 0 } = useQuery({
+    queryKey: ['dept-faculty-count', user?.departmentId],
+    enabled: !!user?.departmentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id', { count: 'exact', head: true })
+        .eq('department_id', user!.departmentId!);
+      if (error) throw error;
+      return data as unknown as number;
+    },
+  });
 
   const handleRefresh = async () => {
     setRefreshing(true);

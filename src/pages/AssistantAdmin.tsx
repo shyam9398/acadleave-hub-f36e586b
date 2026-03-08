@@ -392,6 +392,14 @@ const AssistantAdmin = () => {
         )}
       </div>
 
+      {/* Dev code popup at bottom */}
+      {devCode && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground px-6 py-3 rounded-lg shadow-lg animate-in fade-in slide-in-from-bottom-4">
+          <p className="text-sm font-mono font-bold tracking-widest text-center">
+            Dev Code: {devCode} <span className="text-xs opacity-75">({codeExpiry}s)</span>
+          </p>
+        </div>
+      )}
     </DashboardLayout>
   );
 };
