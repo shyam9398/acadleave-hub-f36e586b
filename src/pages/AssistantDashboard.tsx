@@ -24,12 +24,12 @@ const AssistantDashboard = () => {
     queryKey: ['dept-faculty-count', user?.departmentId],
     enabled: !!user?.departmentId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('profiles')
         .select('user_id', { count: 'exact', head: true })
         .eq('department_id', user!.departmentId!);
       if (error) throw error;
-      return data as unknown as number;
+      return count ?? 0;
     },
   });
 
