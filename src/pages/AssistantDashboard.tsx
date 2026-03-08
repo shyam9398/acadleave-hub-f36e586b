@@ -2,19 +2,36 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { LeaveRequestsTable } from '@/components/LeaveRequestsTable';
 import { useDepartmentLeaveRequests } from '@/hooks/useLeaveRequests';
 import { useProfilesMap, useDepartmentsMap } from '@/hooks/useProfiles';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Users, Bell, RefreshCw } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { LeaveBalanceTable } from '@/components/LeaveBalanceTable';
 import { useMyLeaveBalances } from '@/hooks/useLeaveBalances';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AssistantDashboard = () => {
+  const { user } = useAuth();
   const { data: requests = [] } = useDepartmentLeaveRequests();
   const { data: balances = [] } = useMyLeaveBalances();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Count faculty in same department
+  const { data: facultyCount = 0 } = useQuery({
+    queryKey: ['dept-faculty-count', user?.departmentId],
+    enabled: !!user?.departmentId,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('user_id', { count: 'exact', head: true })
+        .eq('department_id', user!.departmentId!);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -47,11 +64,12 @@ const AssistantDashboard = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           {[
             { label: 'Total Records', value: stats.total, icon: <FileText className="w-5 h-5" />, color: 'text-primary' },
             { label: 'Approved', value: stats.approved, icon: <Users className="w-5 h-5" />, color: 'text-status-approved' },
             { label: 'Pending', value: stats.pending, icon: <Bell className="w-5 h-5" />, color: 'text-status-pending' },
+            { label: 'Faculty in Branch', value: facultyCount, icon: <Users className="w-5 h-5" />, color: 'text-primary' },
           ].map(s => (
             <Card key={s.label} className="border border-border">
               <CardContent className="pt-4 pb-3 px-4 flex items-center gap-3">
