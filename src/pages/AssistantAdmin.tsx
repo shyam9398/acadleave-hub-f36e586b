@@ -19,7 +19,7 @@ interface FacultyBalance {
   academic_year: string;
 }
 
-const LEAVE_TYPES = ['casual', 'earned', 'medical', 'od'] as const;
+const LEAVE_TYPES = ['casual', 'earned', 'medical', 'od', 'lop'] as const;
 
 const leaveTypeLabels: Record<string, string> = {
   casual: 'Casual Leave (CL)',
