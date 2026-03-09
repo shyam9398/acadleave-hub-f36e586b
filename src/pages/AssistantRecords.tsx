@@ -29,33 +29,47 @@ const AssistantRecords = () => {
     });
   }, [requests, fromDate, toDate]);
 
-  const handleDownloadPDF = () => {
-    // Use browser print-to-PDF with only the table content
-    const printContent = printRef.current;
-    if (!printContent) return;
-    const win = window.open('', '_blank');
-    if (!win) return;
-    win.document.write(`
-      <html><head><title>Leave Records</title>
+  const printHtml = (title: string, bodyHtml: string) => {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.top = '-10000px';
+    iframe.style.left = '-10000px';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) { document.body.removeChild(iframe); return; }
+    doc.open();
+    doc.write(`
+      <html><head><title>${title}</title>
       <style>
         body { font-family: sans-serif; padding: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
         th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
         th { background: #f5f5f5; font-weight: bold; }
       </style></head><body>
+      ${bodyHtml}
+      </body></html>
+    `);
+    doc.close();
+    setTimeout(() => {
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    }, 300);
+  };
+
+  const handleDownloadPDF = () => {
+    const tableHtml = filteredRequests.map((r, i) => {
+      const name = profilesMap[r.user_id]?.full_name || 'Unknown';
+      const role = rolesMap[r.user_id] || 'Faculty';
+      return `<tr><td>${i+1}</td><td>${name}</td><td>${role}</td><td>${r.leave_type}</td><td>${r.from_date}</td><td>${r.to_date}</td><td>${r.number_of_days}</td><td>${r.reason}</td><td>${r.status}</td></tr>`;
+    }).join('');
+    const body = `
       <h2>Department Leave Records${fromDate ? ` from ${fromDate}` : ''}${toDate ? ` to ${toDate}` : ''}</h2>
       <table><thead><tr>
         <th>S.No</th><th>Faculty</th><th>Role</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th>
-      </tr></thead><tbody>
-       ${filteredRequests.map((r, i) => {
-         const name = profilesMap[r.user_id]?.full_name || 'Unknown';
-         const role = rolesMap[r.user_id] || 'Faculty';
-         return `<tr><td>${i+1}</td><td>${name}</td><td>${role}</td><td>${r.leave_type}</td><td>${r.from_date}</td><td>${r.to_date}</td><td>${r.number_of_days}</td><td>${r.reason}</td><td>${r.status}</td></tr>`;
-      }).join('')}
-      </tbody></table></body></html>
-    `);
-    win.document.close();
-    win.print();
+      </tr></thead><tbody>${tableHtml}</tbody></table>`;
+    printHtml('Leave Records', body);
     toast({ title: 'PDF', description: 'Print dialog opened for PDF download.' });
   };
 
@@ -75,23 +89,9 @@ const AssistantRecords = () => {
 
   const handlePrint = () => {
     const printContent = printRef.current;
-    if (!printContent) { window.print(); return; }
-    const win = window.open('', '_blank');
-    if (!win) return;
-    win.document.write(`
-      <html><head><title>Leave History</title>
-      <style>
-        body { font-family: sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
-        th { background: #f5f5f5; font-weight: bold; }
-      </style></head><body>
-      <h2>Leave History</h2>
-      ${printContent.querySelector('table')?.outerHTML || ''}
-      </body></html>
-    `);
-    win.document.close();
-    win.print();
+    const tableEl = printContent?.querySelector('table');
+    if (!tableEl) { window.print(); return; }
+    printHtml('Leave History', `<h2>Leave History</h2>${tableEl.outerHTML}`);
   };
 
   return (
