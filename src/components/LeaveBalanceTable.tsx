@@ -25,16 +25,8 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
   const totalUsed = clElMl.reduce((s, b) => s + b.used, 0);
   const lopDays = Math.max(0, totalUsed - totalOpening);
 
-  // Calculate remaining for each row (cascading: what's left after this type for next types)
-  let cascadeRemaining = 0;
-  const remainingMap: Record<string, number> = {};
-  // We compute "remaining" as: after deducting from this type, how many days still need deduction from subsequent types
-  // But the user wants "Remaining" to show the balance remaining after deduction
-  // For display: Remaining = Available (i.e. Total - Used) for each type
-
   const allRows = [
     ...sorted,
-    // Dynamic LOP row
     { id: 'lop-dynamic', user_id: '', leave_type: 'lop', opening: 0, used: lopDays, available: null, academic_year: '' } as LeaveBalanceRow,
   ];
 
@@ -48,6 +40,7 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
             <TableHead className="font-semibold text-center text-xs">Total</TableHead>
             <TableHead className="font-semibold text-center text-xs">Used</TableHead>
             <TableHead className="font-semibold text-center text-xs">Available</TableHead>
+            <TableHead className="font-semibold text-center text-xs">Remaining</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -55,6 +48,7 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
             const total = b.opening;
             const used = b.used;
             const available = total - used;
+            const remaining = available;
 
             return (
               <TableRow key={b.id} className="border-b border-border/50">
@@ -65,12 +59,15 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
                 <TableCell className={`text-center font-semibold text-sm py-3 ${available < 0 ? 'text-destructive' : 'text-[hsl(var(--leave-available))]'}`}>
                   {b.leave_type === 'lop' ? (lopDays > 0 ? `-${lopDays}` : '0') : available}
                 </TableCell>
+                <TableCell className={`text-center font-semibold text-sm py-3 ${remaining < 0 ? 'text-destructive' : 'text-[hsl(var(--leave-available))]'}`}>
+                  {b.leave_type === 'lop' ? (lopDays > 0 ? `-${lopDays}` : '0') : remaining}
+                </TableCell>
               </TableRow>
             );
           })}
           {sorted.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-sm">
+              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground text-sm">
                 No leave balance data
               </TableCell>
             </TableRow>
