@@ -19,11 +19,18 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
     (a, b) => typeOrder.indexOf(a.leave_type) - typeOrder.indexOf(b.leave_type)
   );
 
-  // Calculate LOP dynamically: sum of (used - opening) for CL/EL/ML where used > opening
+  // Calculate LOP dynamically
   const clElMl = sorted.filter(b => ['casual', 'earned', 'medical'].includes(b.leave_type));
   const totalOpening = clElMl.reduce((s, b) => s + b.opening, 0);
   const totalUsed = clElMl.reduce((s, b) => s + b.used, 0);
   const lopDays = Math.max(0, totalUsed - totalOpening);
+
+  // Calculate remaining for each row (cascading: what's left after this type for next types)
+  let cascadeRemaining = 0;
+  const remainingMap: Record<string, number> = {};
+  // We compute "remaining" as: after deducting from this type, how many days still need deduction from subsequent types
+  // But the user wants "Remaining" to show the balance remaining after deduction
+  // For display: Remaining = Available (i.e. Total - Used) for each type
 
   const allRows = [
     ...sorted,
