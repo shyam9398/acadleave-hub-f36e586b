@@ -1,4 +1,4 @@
-import { useMyNotifications, useMarkNotificationsRead, useDeleteReadNotifications } from '@/hooks/useNotifications';
+import { useMyNotifications, useMarkNotificationsViewed, useDeleteViewedNotifications } from '@/hooks/useNotifications';
 import { Bell, CheckCircle, AlertTriangle, Info, XCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ReactNode, useEffect, useRef } from 'react';
@@ -17,25 +17,35 @@ const typeIcons: Record<string, ReactNode> = {
 
 export const NotificationPanel = ({ open, onClose }: NotificationPanelProps) => {
   const { data: notifications = [] } = useMyNotifications();
-  const { mutate: markRead } = useMarkNotificationsRead();
-  const { mutate: deleteRead } = useDeleteReadNotifications();
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { mutate: markViewed } = useMarkNotificationsViewed();
+  const { mutate: deleteViewed } = useDeleteViewedNotifications();
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (open && notifications.length > 0) {
-      // Mark as read immediately (removes red indicator)
+      // Mark unread as viewed (sets read=true, viewed_at=now)
       const hasUnread = notifications.some((n: any) => !n.read);
-      if (hasUnread) markRead();
+      if (hasUnread) markViewed();
 
-      // Delete read notifications after 5 minutes
-      timerRef.current = setTimeout(() => {
-        deleteRead();
+      // Check every 60s and delete notifications viewed >= 5 min ago
+      timerRef.current = setInterval(() => {
+        deleteViewed();
+      }, 60 * 1000);
+
+      // Also run once after 5 minutes
+      const initialTimer = setTimeout(() => {
+        deleteViewed();
       }, 5 * 60 * 1000);
+
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        clearTimeout(initialTimer);
+      };
     }
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [open, notifications.length, markRead, deleteRead]);
+  }, [open, notifications.length, markViewed, deleteViewed]);
 
   if (!open) return null;
 
