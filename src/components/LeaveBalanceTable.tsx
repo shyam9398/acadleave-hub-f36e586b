@@ -5,13 +5,13 @@ import {
 
 const typeLabels: Record<string, string> = {
   casual: 'Casual Leave',
-  medical: 'Medical Leave',
   earned: 'Earned Leave',
+  medical: 'Medical Leave',
   od: 'On Duty',
   lop: 'Loss of Pay',
 };
 
-const typeOrder = ['casual', 'medical', 'earned', 'od'];
+const typeOrder = ['casual', 'earned', 'medical', 'od'];
 
 export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] }) => {
   const filtered = balances.filter(b => typeOrder.includes(b.leave_type));
