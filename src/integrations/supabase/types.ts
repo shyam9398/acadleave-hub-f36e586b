@@ -192,6 +192,7 @@ export type Database = {
           read: boolean
           type: string
           user_id: string
+          viewed_at: string | null
         }
         Insert: {
           created_at?: string
@@ -200,6 +201,7 @@ export type Database = {
           read?: boolean
           type?: string
           user_id: string
+          viewed_at?: string | null
         }
         Update: {
           created_at?: string
@@ -208,6 +210,7 @@ export type Database = {
           read?: boolean
           type?: string
           user_id?: string
+          viewed_at?: string | null
         }
         Relationships: []
       }
