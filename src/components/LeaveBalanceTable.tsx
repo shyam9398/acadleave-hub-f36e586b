@@ -19,7 +19,7 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
     (a, b) => typeOrder.indexOf(a.leave_type) - typeOrder.indexOf(b.leave_type)
   );
 
-  // Calculate LOP dynamically
+  // Calculate LOP dynamically from CL+EL+ML
   const clElMl = sorted.filter(b => ['casual', 'earned', 'medical'].includes(b.leave_type));
   const totalOpening = clElMl.reduce((s, b) => s + b.opening, 0);
   const totalUsed = clElMl.reduce((s, b) => s + b.used, 0);
@@ -45,10 +45,27 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
         </TableHeader>
         <TableBody>
           {allRows.map((b, idx) => {
-            const total = b.opening;
-            const used = b.used;
-            const available = total - used;
-            const remaining = available;
+            const isOD = b.leave_type === 'od';
+            const isLOP = b.leave_type === 'lop';
+
+            let total: number, used: number, available: number, remaining: number;
+
+            if (isOD) {
+              total = 0;
+              used = b.used;
+              available = 0;
+              remaining = 0;
+            } else if (isLOP) {
+              total = 0;
+              used = lopDays;
+              available = lopDays > 0 ? -lopDays : 0;
+              remaining = lopDays > 0 ? -lopDays : 0;
+            } else {
+              total = b.opening;
+              used = b.used;
+              available = total - used;
+              remaining = available;
+            }
 
             return (
               <TableRow key={b.id} className="border-b border-border/50">
@@ -57,10 +74,10 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
                 <TableCell className="text-center font-semibold text-sm py-3">{total}</TableCell>
                 <TableCell className="text-center font-semibold text-sm py-3 text-[hsl(var(--leave-used))]">{used}</TableCell>
                 <TableCell className={`text-center font-semibold text-sm py-3 ${available < 0 ? 'text-destructive' : 'text-[hsl(var(--leave-available))]'}`}>
-                  {b.leave_type === 'lop' ? (lopDays > 0 ? `-${lopDays}` : '0') : available}
+                  {available}
                 </TableCell>
                 <TableCell className={`text-center font-semibold text-sm py-3 ${remaining < 0 ? 'text-destructive' : 'text-[hsl(var(--leave-available))]'}`}>
-                  {b.leave_type === 'lop' ? (lopDays > 0 ? `-${lopDays}` : '0') : remaining}
+                  {remaining}
                 </TableCell>
               </TableRow>
             );
