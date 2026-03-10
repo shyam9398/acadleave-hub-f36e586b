@@ -19,13 +19,15 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
     (a, b) => typeOrder.indexOf(a.leave_type) - typeOrder.indexOf(b.leave_type)
   );
 
-  // Get LOP row from DB (stored by trigger), fallback to 0
-  const lopRow = balances.find(b => b.leave_type === 'lop');
-  const lopDays = lopRow ? lopRow.used : 0;
+  // Calculate LOP dynamically from CL+EL+ML
+  const clElMl = sorted.filter(b => ['casual', 'earned', 'medical'].includes(b.leave_type));
+  const totalOpening = clElMl.reduce((s, b) => s + b.opening, 0);
+  const totalUsed = clElMl.reduce((s, b) => s + b.used, 0);
+  const lopDays = Math.max(0, totalUsed - totalOpening);
 
   const allRows = [
     ...sorted,
-    { id: lopRow?.id ?? 'lop-dynamic', user_id: '', leave_type: 'lop', opening: 0, used: lopDays, available: null, academic_year: '' } as LeaveBalanceRow,
+    { id: 'lop-dynamic', user_id: '', leave_type: 'lop', opening: 0, used: lopDays, available: null, academic_year: '' } as LeaveBalanceRow,
   ];
 
   return (
