@@ -37,7 +37,6 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
             <TableHead className="font-semibold text-xs">Leave Type</TableHead>
             <TableHead className="font-semibold text-center text-xs">Total</TableHead>
             <TableHead className="font-semibold text-center text-xs">Used</TableHead>
-            <TableHead className="font-semibold text-center text-xs">Available</TableHead>
             <TableHead className="font-semibold text-center text-xs">Remaining</TableHead>
           </TableRow>
         </TableHeader>
@@ -71,9 +70,6 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
                 <TableCell className="font-medium text-sm py-3">{typeLabels[b.leave_type] ?? b.leave_type}</TableCell>
                 <TableCell className="text-center font-semibold text-sm py-3">{total}</TableCell>
                 <TableCell className="text-center font-semibold text-sm py-3 text-[hsl(var(--leave-used))]">{used}</TableCell>
-                <TableCell className={`text-center font-semibold text-sm py-3 ${available < 0 ? 'text-destructive' : 'text-[hsl(var(--leave-available))]'}`}>
-                  {available}
-                </TableCell>
                 <TableCell className={`text-center font-semibold text-sm py-3 ${remaining < 0 ? 'text-destructive' : 'text-[hsl(var(--leave-available))]'}`}>
                   {remaining}
                 </TableCell>
@@ -82,7 +78,7 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
           })}
           {sorted.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground text-sm">
+              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-sm">
                 No leave balance data
               </TableCell>
             </TableRow>
