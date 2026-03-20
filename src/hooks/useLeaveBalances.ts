@@ -14,8 +14,8 @@ export interface LeaveBalanceRow {
 
 const DEFAULT_BALANCES: { leave_type: string; opening: number }[] = [
   { leave_type: 'casual', opening: 12 },
-  { leave_type: 'earned', opening: 20 },
-  { leave_type: 'medical', opening: 4 },
+  { leave_type: 'earned', opening: 4 },
+  { leave_type: 'medical', opening: 20 },
   { leave_type: 'od', opening: 0 },
 ];
 
