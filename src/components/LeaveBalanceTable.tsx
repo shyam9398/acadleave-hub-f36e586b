@@ -70,9 +70,6 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
                 <TableCell className="font-medium text-sm py-3">{typeLabels[b.leave_type] ?? b.leave_type}</TableCell>
                 <TableCell className="text-center font-semibold text-sm py-3">{total}</TableCell>
                 <TableCell className="text-center font-semibold text-sm py-3 text-[hsl(var(--leave-used))]">{used}</TableCell>
-                <TableCell className={`text-center font-semibold text-sm py-3 ${available < 0 ? 'text-destructive' : 'text-[hsl(var(--leave-available))]'}`}>
-                  {available}
-                </TableCell>
                 <TableCell className={`text-center font-semibold text-sm py-3 ${remaining < 0 ? 'text-destructive' : 'text-[hsl(var(--leave-available))]'}`}>
                   {remaining}
                 </TableCell>
