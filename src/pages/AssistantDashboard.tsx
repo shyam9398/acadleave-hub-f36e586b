@@ -5,12 +5,15 @@ import { useProfilesMap, useDepartmentsMap } from '@/hooks/useProfiles';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Users, Bell, RefreshCw } from 'lucide-react';
+import { FileText, Users, Bell, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { LeaveBalanceTable } from '@/components/LeaveBalanceTable';
 import { useMyLeaveBalances } from '@/hooks/useLeaveBalances';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLopFaculty } from '@/hooks/useLopFaculty';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 
 const AssistantDashboard = () => {
   const { user } = useAuth();
