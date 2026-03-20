@@ -22,8 +22,9 @@ export const LeaveBalanceCards = ({ balances }: { balances: LeaveBalanceRow[] })
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       {balances.map((b) => {
         const isOd = b.leave_type === 'od';
-        const available = isOd ? b.used : (b.available ?? (b.opening - b.used));
-        const percentage = b.opening > 0 ? (((b.available ?? (b.opening - b.used)) / b.opening) * 100) : 0;
+        const cappedUsed = isOd ? b.used : Math.min(b.used, b.opening);
+        const available = isOd ? b.used : Math.max(b.opening - cappedUsed, 0);
+        const percentage = b.opening > 0 ? ((available / b.opening) * 100) : 0;
         return (
           <Card key={b.id} className="border border-border">
             <CardContent className="pt-5 pb-4 px-5">

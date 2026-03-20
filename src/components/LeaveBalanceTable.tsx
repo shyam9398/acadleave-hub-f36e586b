@@ -61,7 +61,7 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
             } else {
               total = b.opening;
               used = Math.min(b.used, b.opening);
-              available = Math.max(total - b.used, 0);
+              available = Math.max(total - used, 0);
               remaining = available;
             }
 
