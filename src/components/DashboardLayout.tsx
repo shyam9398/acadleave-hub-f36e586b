@@ -54,7 +54,7 @@ const roleNavItems: Record<string, { label: string; icon: ReactNode; path: strin
 };
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
@@ -70,7 +70,27 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     setSidebarOpen(!isMobile);
   }, [isMobile]);
 
-  if (!user) return null;
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/');
+    }
+  }, [loading, user, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-muted-foreground">Redirecting to login...</p>
+      </div>
+    );
+  }
 
   const navItems = roleNavItems[user.role] || [];
   const unreadCount = notifications.filter((n: any) => !n.read).length;
