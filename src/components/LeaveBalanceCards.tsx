@@ -44,7 +44,7 @@ export const LeaveBalanceCards = ({ balances }: { balances: LeaveBalanceRow[] })
                     />
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Used: {b.used}</span>
+                    <span>Used: {cappedUsed}</span>
                     <span>Total: {b.opening}</span>
                   </div>
                 </>
