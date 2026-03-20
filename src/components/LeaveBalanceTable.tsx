@@ -19,11 +19,9 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
     (a, b) => typeOrder.indexOf(a.leave_type) - typeOrder.indexOf(b.leave_type)
   );
 
-  // Calculate LOP dynamically from CL+EL+ML
+  // Calculate LOP dynamically: overflow beyond opening for CL+EL+ML
   const clElMl = sorted.filter(b => ['casual', 'earned', 'medical'].includes(b.leave_type));
-  const totalOpening = clElMl.reduce((s, b) => s + b.opening, 0);
-  const totalUsed = clElMl.reduce((s, b) => s + b.used, 0);
-  const lopDays = Math.max(0, totalUsed - totalOpening);
+  const lopDays = clElMl.reduce((s, b) => s + Math.max(0, b.used - b.opening), 0);
 
   const allRows = [
     ...sorted,
