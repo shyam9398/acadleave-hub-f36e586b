@@ -104,6 +104,56 @@ const AssistantDashboard = () => {
             facultyBasePath="/assistant"
           />
         </div>
+
+        {/* LOP Faculty Section */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-5 h-5 text-destructive" />
+            <h2 className="text-lg font-semibold">Faculty with Loss of Pay (LOP)</h2>
+          </div>
+          <Input
+            placeholder="Search faculty by name..."
+            value={lopSearch}
+            onChange={(e) => setLopSearch(e.target.value)}
+            className="mb-3 max-w-sm"
+          />
+          {(() => {
+            const filtered = lopFaculty.filter(f =>
+              f.full_name.toLowerCase().includes(lopSearch.toLowerCase())
+            );
+            if (filtered.length === 0) {
+              return (
+                <div className="rounded-lg border border-border bg-card p-6 text-center text-muted-foreground text-sm">
+                  No faculty with LOP in your department
+                </div>
+              );
+            }
+            return (
+              <div className="rounded-lg border border-border overflow-x-auto bg-card">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50 border-b-2 border-border">
+                      <TableHead className="font-semibold text-xs">Faculty Name</TableHead>
+                      <TableHead className="font-semibold text-xs">Department</TableHead>
+                      <TableHead className="font-semibold text-center text-xs">Total LOP</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((f) => (
+                      <TableRow key={f.user_id} className="border-b border-border/50">
+                        <TableCell className="font-medium text-sm py-3">{f.full_name}</TableCell>
+                        <TableCell className="text-sm py-3 text-muted-foreground">{f.department_name}</TableCell>
+                        <TableCell className="text-center font-semibold text-sm py-3 text-destructive">
+                          -{f.lop_days}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            );
+          })()}
+        </div>
       </div>
     </DashboardLayout>
   );
