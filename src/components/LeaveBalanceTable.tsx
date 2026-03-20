@@ -37,7 +37,6 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
             <TableHead className="font-semibold text-xs">Leave Type</TableHead>
             <TableHead className="font-semibold text-center text-xs">Total</TableHead>
             <TableHead className="font-semibold text-center text-xs">Used</TableHead>
-            <TableHead className="font-semibold text-center text-xs">Available</TableHead>
             <TableHead className="font-semibold text-center text-xs">Remaining</TableHead>
           </TableRow>
         </TableHeader>
