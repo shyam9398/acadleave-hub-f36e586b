@@ -78,7 +78,7 @@ export const LeaveBalanceTable = ({ balances }: { balances: LeaveBalanceRow[] })
           })}
           {sorted.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground text-sm">
+              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground text-sm">
                 No leave balance data
               </TableCell>
             </TableRow>
