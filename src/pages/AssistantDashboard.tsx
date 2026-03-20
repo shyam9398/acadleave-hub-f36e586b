@@ -19,8 +19,10 @@ const AssistantDashboard = () => {
   const { user } = useAuth();
   const { data: requests = [] } = useDepartmentLeaveRequests();
   const { data: balances = [] } = useMyLeaveBalances();
+  const { data: lopFaculty = [] } = useLopFaculty();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [lopSearch, setLopSearch] = useState('');
 
   // Count faculty in same department
   const { data: facultyCount = 0 } = useQuery({
